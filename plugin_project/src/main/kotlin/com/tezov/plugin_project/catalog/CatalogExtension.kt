@@ -1,7 +1,5 @@
 package com.tezov.plugin_project.catalog
 
-import com.android.build.api.variant.AndroidComponentsExtension
-import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.tezov.plugin_project.PropertyDelegate
@@ -9,11 +7,10 @@ import com.tezov.plugin_project.catalog.CatalogScope.Companion.DEFAULT_INT
 import com.tezov.plugin_project.catalog.CatalogScope.Companion.DEFAULT_JAVA_VERSION
 import com.tezov.plugin_project.catalog.CatalogScope.Companion.DEFAULT_STRING
 import com.tezov.plugin_project.catalog.CatalogScope.Companion.DEFAULT_STRING_LIST
-import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_PLUGIN_ID
+import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_EXTENSION_NAME
 import org.gradle.api.GradleException
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
-import org.gradle.kotlin.dsl.buildscript
 import java.io.File
 import javax.inject.Inject
 
@@ -95,10 +92,10 @@ open class CatalogRootExtension @Inject constructor(
         if (verbosePluginApply) println("Project : ${project.name}")
         project.allprojects.filter { it !== project }.forEach { module ->
             if (verbosePluginApply) println("Module : ${module.name}")
-            if (verbosePluginApply) println("apply plugin : $CATALOG_PLUGIN_ID")
-            module.plugins.apply(CATALOG_PLUGIN_ID)
+            if (verbosePluginApply) println("apply plugin : ${ProjectCatalogPlugin.CATALOG_PLUGIN_ID}")
+            module.plugins.apply(ProjectCatalogPlugin.CATALOG_PLUGIN_ID)
             kotlin.runCatching {
-                module.extensions.findByName(ProjectCatalogPlugin.CATALOG_PLUGIN_NAME) as? CatalogExtension
+                module.extensions.findByName(CATALOG_EXTENSION_NAME) as? CatalogExtension
             }.getOrNull()?.delegate(this) ?: run {
                 throw GradleException("catalog plugin not successfully apply to ${project.name}")
             }

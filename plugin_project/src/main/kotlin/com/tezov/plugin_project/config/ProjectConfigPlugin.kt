@@ -6,12 +6,12 @@ import org.gradle.api.Project
 class ProjectConfigPlugin : Plugin<Project> {
 
     companion object {
-        private const val CONFIG_PLUGIN_ID = "com.tezov.plugin_project.config"
-        private const val CONFIG_PLUGIN_NAME = "tezovConfig"
+        internal const val CONFIG_PLUGIN_ID = "com.tezov.plugin_project.config"
+        internal const val CONFIG_EXTENSION_NAME = "tezovConfig"
     }
 
     override fun apply(project: Project) {
-        project.extensions.create(CONFIG_PLUGIN_NAME, ConfigExtension::class.java)
+        project.extensions.create(CONFIG_EXTENSION_NAME, ConfigExtension::class.java)
     }
 
 }

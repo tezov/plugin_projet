@@ -1,11 +1,15 @@
-val androidPluginVersion = "8.0.2"
-val alphaVersion:Int? = 9
-val domainVersion = androidPluginVersion.let { androidPluginVersion ->
-    alphaVersion?.let {
-        "$androidPluginVersion-alpha.${alphaVersion}"
-    } ?: androidPluginVersion
-}
 val domainName = "com.tezov"
+val tezovPluginVersion = "1.0.0"
+val androidPluginVersion = "8.0.2+"
+val alphaVersion:Int? = 10
+val domainVersion = StringBuilder().apply {
+    append(tezovPluginVersion)
+    append("-")
+    append(androidPluginVersion)
+    alphaVersion?.let {
+        append("-alpha.${alphaVersion}")
+    }
+}.toString()
 
 buildscript {
     dependencies {
@@ -50,7 +54,7 @@ gradlePlugin {
 
 dependencies {
     implementation(gradleApi())
-    implementation(kotlin("stdlib"))
+//    implementation(kotlin("stdlib"))
     implementation("com.android.tools.build:gradle:${androidPluginVersion}")
     implementation("com.fasterxml.jackson.core:jackson-core:2.15.2")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.15.2")
