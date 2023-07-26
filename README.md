@@ -1,6 +1,7 @@
 # Tezov plugin project
 
 ## What's New
+- change tag to show plugin version and minimum android version - 1.0.0-8.0.2+-alpha.10
 - clean master branch - 8.0.2-alpha.9
 - add catalog plugin - 8.0.2-alpha.6 
 - publish to gradle portal plugin - 8.0.2-alpha.2
@@ -26,6 +27,26 @@ This project is a gradle plugin to auto setup the **android plugin application a
 - proguard path + debug variables working 
 
 ## How to install -Config- plugin
+- add classpath and repositories to **root setting project** settings.gradle.kts
+
+```
+buildscript {
+
+    dependencies {
+        classpath("com.tezov:plugin_project:?version?")
+        classpath("com.android.tools.build:gradle:?version?")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:?version?")
+    }
+
+    repositories {
+        mavenLocal()
+        google()
+        mavenCentral()
+        maven("https://jitpack.io")
+    }
+
+}
+```
 
 - add plugin
 
@@ -34,7 +55,7 @@ plugins {
     //id("com.android.application") //for android application
     // id("com.android.library") //for android libray
     ...
-    id(com.tezov.plugin_project.config) version "?version?" apply true
+    id(com.tezov.plugin_project.config)
 }
 ```
 
@@ -163,13 +184,33 @@ android {
 
 
 ## How to install -Catalog- plugin
+- add classpath and repositories to **root setting project** settings.gradle.kts
+
+```
+buildscript {
+
+    dependencies {
+        classpath("com.tezov:plugin_project:?version?")
+        classpath("com.android.tools.build:gradle:?version?")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:?version?")
+    }
+
+    repositories {
+        mavenLocal()
+        google()
+        mavenCentral()
+        maven("https://jitpack.io")
+    }
+
+}
+```
 
 - add plugin to **root project** build.gradle.kts
 
 ```
 plugins {
    ...
-    id("com.tezov.plugin_project.catalog") version "?version?" apply true !!!! APPLY true very important here
+    id("com.tezov.plugin_project.catalog")
 }
 ```
 
@@ -204,13 +245,6 @@ tezovCatalog {
     "javaTarget": "${javasource}",
     "jvmTarget": "17",
     "composeCompiler": "1.4.8",
-    "plugin": {
-      "android": "8.0.2",
-      "kotlin": "1.8.22",
-      "kapt": "1.8.22",
-      "ksp": "1.8.21-1.0.11",
-      "tezov_project": "8.0.2-alpha.7"
-    },
     "dependencies": {
       "core": {
         "multidex": "2.0.1",
