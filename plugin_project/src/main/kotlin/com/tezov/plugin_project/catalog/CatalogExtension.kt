@@ -12,6 +12,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import java.io.File
+import java.net.URL
 import javax.inject.Inject
 
 class CatalogScope(
@@ -51,14 +52,42 @@ class CatalogScope(
 
 }
 
+interface JsonFile {
+    val data: String
+}
+
 open class CatalogRootExtension @Inject constructor(
     private val project: Project
 ) {
     var verboseCatalogBuild by PropertyDelegate { false }
     var verbosePluginApply by PropertyDelegate { false }
     var verboseReadValue by PropertyDelegate { false }
-    var path by PropertyDelegate<String?> { null }
+
+    var jsonFile by PropertyDelegate<JsonFile?> { null }
     private val rawCatalog = mutableMapOf<String, String>()
+
+    fun jsonFromFile(path: String) = object : JsonFile {
+        override val data: String
+            get() = File(path).also {
+                if (!it.exists() || !it.isFile) {
+                    throw GradleException("catalog file not found")
+                }
+                if(verboseCatalogBuild) println("retrieve json catalog from file $path")
+            }.readText()
+    }
+
+    fun jsonFromUrl(href: String) = object : JsonFile {
+        override val data: String
+            get() = URL(href).also {
+                if(verboseCatalogBuild) println("retrieve json catalog from url $href")
+            }.readText()
+    }
+
+    fun jsonFromString(data: String) = object : JsonFile {
+        override val data: String get() = data.also {
+            if(verboseCatalogBuild) println("retrieve json catalog from string")
+        }
+    }
 
     fun configureProjects() {
         buildRawCatalog()
@@ -66,17 +95,13 @@ open class CatalogRootExtension @Inject constructor(
     }
 
     private fun buildRawCatalog() {
-        val path = this.path ?: run {
+        val uri = this.jsonFile ?: run {
             throw GradleException("catalog path is null")
         }
-        if (verboseCatalogBuild) println("Read catalog json : $path")
-        val catalogFile = File(path)
-        if (!catalogFile.exists() || !catalogFile.isFile) {
-            throw GradleException("catalog file not found")
-        }
+        if (verboseCatalogBuild) println("Read catalog json : $uri")
         val objectMapper = ObjectMapper()
         val inputMap = objectMapper.readValue(
-            catalogFile.readText(),
+            uri.data,
             object : TypeReference<Map<String, Any>>() {}
         )
         flattenMap(inputMap, rawCatalog)

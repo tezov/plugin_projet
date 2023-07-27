@@ -1,7 +1,7 @@
 val domainName = "com.tezov"
 val tezovPluginVersion = "1.0.0"
 val androidPluginVersion = "8.0.2+"
-val alphaVersion:Int? = 10
+val alphaVersion:Int? = 11
 val domainVersion = StringBuilder().apply {
     append(tezovPluginVersion)
     append("-")
