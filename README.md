@@ -1,6 +1,8 @@
 # Tezov plugin project
 
 ## What's New
+- add dependencies version checker - 1.0.0-8.0.2+-alpha.11
+- allow url, file or string data for json catalog - 1.0.0-8.0.2+-alpha.11
 - change tag to show plugin version and minimum android version - 1.0.0-8.0.2+-alpha.10
 - clean master branch - 8.0.2-alpha.9
 - add catalog plugin - 8.0.2-alpha.6
@@ -221,9 +223,27 @@ tezovCatalog {
 //    verboseCatalogBuild = true
 //    verbosePluginApply = true
 //    verboseReadValue = true
+//    verboseCheckDependenciesVersion = true
 
-    path = "F:/android_project/tezov_banque/tezov_bank.catalog.json" // will change soon to be an uri local file or remote file
-    configureProjects() !!! VERY IMPORTANT
+    jsonFile = jsonFromFile("F:/android_project/tezov_banque/tezov_bank.catalog.json")
+    or jsonFile = jsonFromUrl("https://www.tezov.com/tezov_bank.catalog.json")
+    or jsonFromString = "{** json catalog string here  **}"
+
+  // uncomment to check dependencies from catalog
+/*    with("projectPath.dependencies"){
+        with("core"){
+            checkDependenciesVersion()
+        }
+        with("compose"){
+            checkDependenciesVersion()
+        }
+        with("lib"){
+            checkDependenciesVersion()
+        }
+    }
+*/    
+
+    configureProjects() !!!! MANDATORY !!!!
 }
 ```
 
@@ -237,6 +257,19 @@ tezovCatalog {
 
 ```
 {
+  "domain": "com.tezov",
+  "resourcesExcluded": [
+    "META-INF/DEPENDENCIES",
+    "META-INF/LICENSE",
+    "META-INF/LICENSE.txt",
+    "META-INF/LICENSE.md",
+    "META-INF/LICENSE-notice.md",
+    "META-INF/NOTICE",
+    "META-INF/NOTICE.txt",
+    "META-INF/NOTICE.md",
+    "META-INF/ASL2.0",
+    "META-INF/LGPL2.1"
+  ],
   "projectVersion": {
     "defaultCompileSdk": 33,
     "defaultMinCompileSdk": 21,
@@ -296,7 +329,7 @@ tezovCatalog {
         "kotlin_serialization_json": "1.5.1",
         "google_play_services_maps": "18.1.0",
         "okhttp3_interceptor": "5.0.0-alpha.11",
-        "retrofit": "2.9.0",
+        "retrofit": "2.8.0",
         "retrofit2_scalar": "2.1.0",
         "retrofit2_gson": "2.9.0",
         "glide": "4.13.2",
@@ -328,28 +361,6 @@ tezovCatalog {
     }
   },
   "projectPath": {
-    "resourcesExcluded" : [
-      "META-INF/DEPENDENCIES",
-      "META-INF/LICENSE",
-      "META-INF/LICENSE.txt",
-      "META-INF/LICENSE.md",
-      "META-INF/LICENSE-notice.md",
-      "META-INF/NOTICE",
-      "META-INF/NOTICE.txt",
-      "META-INF/NOTICE.md",
-      "META-INF/ASL2.0",
-      "META-INF/LGPL2.1"
-    ],
-    "plugin": {
-      "android": "com.android",
-      "application": "${android}.application",
-      "libray": "${android}.library",
-      "kotlin": "org.jetbrains.kotlin.android",
-      "kapt": "org.jetbrains.kotlin.kapt",
-      "ksp": "com.google.devtools.ksp",
-      "tezov_project": "com.tezov.plugin_project",
-      "tezov_project_config": "${tezov_project}.config"
-    },
     "dependencies": {
       "core": {
         "multidex": "androidx.multidex:multidex:${projectVersion.dependencies.core.multidex}",
@@ -381,9 +392,9 @@ tezovCatalog {
         "foundation": "androidx.compose.foundation:foundation:${projectVersion.dependencies.compose.foundation}",
         "accompanist_pager_indicators": "com.google.accompanist:accompanist-pager-indicators:${projectVersion.dependencies.compose.accompanist_pager_indicators}",
         "animation": "androidx.compose.ui:ui-graphics:${projectVersion.dependencies.compose.animation}",
-        "activity":  "androidx.activity:activity-compose:${projectVersion.dependencies.compose.activity}",
+        "activity": "androidx.activity:activity-compose:${projectVersion.dependencies.compose.activity}",
         "constraintlayout": "androidx.constraintlayout:constraintlayout-compose:${projectVersion.dependencies.compose.constraintlayout}",
-        "viewmodel":  "androidx.lifecycle:lifecycle-viewmodel-compose:${projectVersion.dependencies.compose.viewmodel}",
+        "viewmodel": "androidx.lifecycle:lifecycle-viewmodel-compose:${projectVersion.dependencies.compose.viewmodel}",
         "livedata": "androidx.compose.runtime:runtime-livedata:${projectVersion.dependencies.compose.livedata}",
         "navigation": "androidx.navigation:navigation-compose:${projectVersion.dependencies.compose.navigation}",
         "google_maps": "com.google.maps.android:maps-compose:${projectVersion.dependencies.compose.google_maps}"
@@ -399,13 +410,13 @@ tezovCatalog {
         "jackson_databind": "com.fasterxml.jackson.core:jackson-databind:${projectVersion.dependencies.lib.jackson_databind}",
         "kotlin_serialization": "org.jetbrains.kotlin.plugin.serialization:${projectVersion.dependencies.lib.kotlin_serialization}",
         "kotlin_serialization_json": "org.jetbrains.kotlin.plugin.serialization-json:${projectVersion.dependencies.lib.kotlin_serialization_json}",
-        "google_play_services_maps": "com.google.android.gms:play-services-maps${projectVersion.dependencies.lib.google_play_services_maps}",
+        "google_play_services_maps": "com.google.android.gms:play-services-maps:${projectVersion.dependencies.lib.google_play_services_maps}",
         "okhttp3_interceptor": "com.squareup.okhttp3:logging-interceptor:${projectVersion.dependencies.lib.okhttp3_interceptor}",
         "retrofit": "com.squareup.retrofit2:retrofit:${projectVersion.dependencies.lib.retrofit}",
         "retrofit2_scalar": "com.squareup.retrofit2:converter-scalars:${projectVersion.dependencies.lib.retrofit2_scalar}",
         "retrofit2_gson": "com.squareup.retrofit2:converter-gson:${projectVersion.dependencies.lib.retrofit2_gson}",
         "glide": "com.github.bumptech.glide:glide:${projectVersion.dependencies.lib.glide}",
-        "glide_kapt": "com.github.bumptech.glide:compiler::${projectVersion.dependencies.lib.glide_kapt}",
+        "glide_kapt": "com.github.bumptech.glide:compiler:${projectVersion.dependencies.lib.glide_kapt}",
         "glide_okhttp3": "com.github.bumptech.glide:okhttp3-integration:${projectVersion.dependencies.lib.glide_okhttp3}"
       }
     },
@@ -414,7 +425,7 @@ tezovCatalog {
         "test": "androidx.test:core:${projectVersion.dependencies_test.core_integration.test}",
         "test_ktx": "androidx.test:core-ktx:${projectVersion.dependencies_test.core_integration.test_ktx}",
         "junit_test": "androidx.test.ext:junit:${projectVersion.dependencies_test.core_integration.junit_test}",
-        "junit_test_ktx":  "androidx.test.ext:junit-ktx:${projectVersion.dependencies_test.core_integration.junit_test_ktx}",
+        "junit_test_ktx": "androidx.test.ext:junit-ktx:${projectVersion.dependencies_test.core_integration.junit_test_ktx}",
         "espresso_core": "androidx.test.espresso:espresso-core:${projectVersion.dependencies_test.core_integration.espresso_core}",
         "espresso_contrib": "androidx.test.espresso:espresso-contrib:${projectVersion.dependencies_test.core_integration.espresso_contrib}",
         "uiautomator": "androidx.test.uiautomator:uiautomator:${projectVersion.dependencies_test.core_integration.uiautomator}",
@@ -432,39 +443,49 @@ tezovCatalog {
       }
     }
   },
+  "appPlugin": {
+    "android": "com.android",
+    "application": "${android}.application",
+    "library": "${android}.library",
+    "kotlin": "org.jetbrains.kotlin.android",
+    "kapt": "org.jetbrains.kotlin.kapt",
+    "ksp": "com.google.devtools.ksp",
+    "tezov_project": "com.tezov.plugin_project",
+    "tezov_project_config": "${tezov_project}.config"
+  },
   "app": [
-    "${projectPath.plugin.application}",
-    "${projectPath.plugin.kotlin}",
-    "${projectPath.plugin.kapt}",
-    "${projectPath.plugin.tezov_project_config}"
+    "${appPlugin.application}",
+    "${appPlugin.kotlin}",
+    "${appPlugin.kapt}",
+    "${appPlugin.tezov_project_config}"
   ],
   "lib_core_android_kotlin": [
-    "${projectPath.plugin.libray}",
-    "${projectPath.plugin.kotlin}",
-    "${projectPath.plugin.kapt}",
-    "${projectPath.plugin.tezov_project_config}"
+    "${appPlugin.library}",
+    "${appPlugin.kotlin}",
+    "${appPlugin.kapt}",
+    "${appPlugin.tezov_project_config}"
   ],
   "lib_core_kotlin": [
-    "${projectPath.plugin.libray}",
-    "${projectPath.plugin.kotlin}",
-    "${projectPath.plugin.kapt}",
-    "${projectPath.plugin.tezov_project_config}"
+    "${appPlugin.library}",
+    "${appPlugin.kotlin}",
+    "${appPlugin.kapt}",
+    "${appPlugin.tezov_project_config}"
   ],
-  "test_common": [
-    "${projectPath.plugin.libray}",
-    "${projectPath.plugin.kotlin}",
-    "${projectPath.plugin.kapt}",
-    "${projectPath.plugin.tezov_project_config}"
+  "lib_test_common": [
+    "${appPlugin.library}",
+    "${appPlugin.kotlin}",
+    "${appPlugin.kapt}",
+    "${appPlugin.tezov_project_config}"
   ],
-  "test_common_integration": [
-    "${projectPath.plugin.libray}",
-    "${projectPath.plugin.kotlin}",
-    "${projectPath.plugin.tezov_project_config}"
+  "lib_test_common_integration": [
+    "${appPlugin.library}",
+    "${appPlugin.kotlin}",
+    "${appPlugin.tezov_project_config}"
   ],
-  "test_common_unit": [
-    "${projectPath.plugin.libray}",
-    "${projectPath.plugin.kotlin}",
-    "${projectPath.plugin.tezov_project_config}"
+  "lib_test_common_unit": [
+    "${appPlugin.library}",
+    "${appPlugin.kotlin}",
+    "${appPlugin.tezov_project_config}"
   ]
 }
 ```
@@ -518,17 +539,17 @@ dependencies {
         }
     }
 }
+
 ```
 
 ## Pro and Cons
 
 pro
 - one single version / dependencies path / constants for a multi external module project.
-- catalog can be remote (not implemented yet, will come soon)
-
+- catalog can be remote
 
 con
-- lost of notification from the IDE which tells you that there is a new version (maybe could be add as feature the plugin when reading the json)
-- still need to manage classpath path and version of build.gradle.kts of root project. Plugin catalog is load too late. Could not find a way to make it load before build.gradle.kts root project
+- lost of notification from the IDE which tells you that there is a new version, but can do some check with checkDependenciesVersion
+- still need to manage classpath path
 
 
