@@ -16,6 +16,7 @@ import java.net.URL
 import javax.inject.Inject
 
 class CatalogScope(
+    private val project: Project,
     private val keyBase: String,
     private val delegate: CatalogRootExtension,
 ) {
@@ -36,19 +37,89 @@ class CatalogScope(
 
     }
 
-    private fun String.absolute() = "$keyBase.$this"
+    private fun String.isValid() =
+        startsWith(keyBase) && getOrNull(keyBase.length).let { it == null || it == '.' }
 
-    fun string(key: String, default: (key: String) -> String = DEFAULT_STRING) =
+    private fun String.absolute() = if (isNotBlank()) "$keyBase.$this" else keyBase
+
+    private fun String.relative() = if (isNotBlank()) {
+        this.replaceFirst(keyBase, "").drop(1)
+    } else ""
+
+    fun with(key: String, block: CatalogScope.() -> Unit) =
+        delegate.with(key = key.absolute(), block = block)
+
+    fun string(key: String = "", default: (key: String) -> String = DEFAULT_STRING) =
         delegate.string(key = key.absolute(), default = default)
 
-    fun stringList(key: String, default: (key: String) -> List<String> = DEFAULT_STRING_LIST) =
+    fun stringList(key: String = "", default: (key: String) -> List<String> = DEFAULT_STRING_LIST) =
         delegate.stringList(key = key.absolute(), default = default)
 
-    fun int(key: String, default: (key: String) -> Int = DEFAULT_INT) =
+    fun int(key: String = "", default: (key: String) -> Int = DEFAULT_INT) =
         delegate.int(key = key.absolute(), default = default)
 
-    fun javaVersion(key: String, default: (key: String) -> JavaVersion = DEFAULT_JAVA_VERSION) =
-        delegate.javaVersion(key = key.absolute(), default = default)
+    fun javaVersion(
+        key: String = "",
+        default: (key: String) -> JavaVersion = DEFAULT_JAVA_VERSION
+    ) = delegate.javaVersion(key = key.absolute(), default = default)
+
+    fun filter(predicate: (key: String) -> Boolean) = delegate.filter {
+        it.isValid() && predicate(it.relative())
+    }.mapKeys {
+        it.key.relative()
+    }
+
+    fun forEach(block: (key: String, value: String) -> Unit) = delegate.filter {
+        it.isValid()
+    }.mapKeys {
+        it.key.relative()
+    }.forEach {
+        block(it.key, it.value)
+    }
+
+    fun checkDependenciesVersion() {
+        delegate.logInfo("**$keyBase checkDependenciesVersion")
+        forEach { key, value ->
+            val dependencyFullName = string(key)
+            val indexOfVersionSeparator = dependencyFullName.lastIndexOf(':')
+            if (indexOfVersionSeparator == -1) {
+                if (delegate.verboseCheckDependenciesVersion) {
+                    delegate.logInfo("$key: version invalid $dependencyFullName")
+                }
+            } else {
+                val dependencyName = dependencyFullName.substring(0, indexOfVersionSeparator)
+                val dependencyVersion = dependencyFullName.substring(indexOfVersionSeparator + 1)
+                if (delegate.verboseCheckDependenciesVersion) {
+                    delegate.logInfo("$key:$dependencyVersion check")
+                }
+                kotlin.runCatching {
+                    val resolvedVersions = project.configurations.detachedConfiguration(
+                        project.dependencies.create("$dependencyName:+")
+                    ).resolvedConfiguration.resolvedArtifacts
+                    resolvedVersions.filter {
+                        it.id.componentIdentifier.displayName.startsWith(dependencyName)
+                    }.maxByOrNull { it.moduleVersion.id.version }?.moduleVersion?.id?.version?.let {
+                        if (it != dependencyVersion) {
+                            delegate.logInfo("$key: can be updated to $it")
+                        }
+                    } ?: run {
+                        if (delegate.verboseCheckDependenciesVersion) {
+                            delegate.logInfo("$key: $dependencyName latest version not found in")
+                            resolvedVersions.forEach {
+                                delegate.logInfo(">> ${it.id.displayName}")
+                            }
+                        }
+                    }
+                }.onFailure {
+                    if (delegate.verboseCheckDependenciesVersion) {
+                        delegate.logInfo("$key: failed to retrieve latest version")
+                    }
+                }
+            }
+
+        }
+        delegate.logInfo("**")
+    }
 
 }
 
@@ -62,6 +133,9 @@ open class CatalogRootExtension @Inject constructor(
     var verboseCatalogBuild by PropertyDelegate { false }
     var verbosePluginApply by PropertyDelegate { false }
     var verboseReadValue by PropertyDelegate { false }
+    var verboseCheckDependenciesVersion by PropertyDelegate { false }
+
+    var checkDependenciesVersion by PropertyDelegate { false }
 
     var jsonFile by PropertyDelegate<JsonFile?> { null }
     private val rawCatalog = mutableMapOf<String, String>()
@@ -72,21 +146,22 @@ open class CatalogRootExtension @Inject constructor(
                 if (!it.exists() || !it.isFile) {
                     throw GradleException("catalog file not found")
                 }
-                if(verboseCatalogBuild) println("retrieve json catalog from file $path")
+                if (verboseCatalogBuild) logInfo("retrieve json catalog from file $path")
             }.readText()
     }
 
     fun jsonFromUrl(href: String) = object : JsonFile {
         override val data: String
             get() = URL(href).also {
-                if(verboseCatalogBuild) println("retrieve json catalog from url $href")
+                if (verboseCatalogBuild) logInfo("retrieve json catalog from url $href")
             }.readText()
     }
 
     fun jsonFromString(data: String) = object : JsonFile {
-        override val data: String get() = data.also {
-            if(verboseCatalogBuild) println("retrieve json catalog from string")
-        }
+        override val data: String
+            get() = data.also {
+                if (verboseCatalogBuild) logInfo("retrieve json catalog from string")
+            }
     }
 
     fun configureProjects() {
@@ -94,11 +169,15 @@ open class CatalogRootExtension @Inject constructor(
         applyProjectsPlugin()
     }
 
+    internal fun logInfo(data: String) {
+        println(data)
+    }
+
     private fun buildRawCatalog() {
         val uri = this.jsonFile ?: run {
             throw GradleException("catalog path is null")
         }
-        if (verboseCatalogBuild) println("Read catalog json : $uri")
+        if (verboseCatalogBuild) logInfo("Read catalog json : $uri")
         val objectMapper = ObjectMapper()
         val inputMap = objectMapper.readValue(
             uri.data,
@@ -107,17 +186,17 @@ open class CatalogRootExtension @Inject constructor(
         flattenMap(inputMap, rawCatalog)
         if (verboseCatalogBuild) {
             rawCatalog.forEach { key, value ->
-                println("$key :: $value")
+                logInfo("$key :: $value")
             }
         }
 
     }
 
     private fun applyProjectsPlugin() {
-        if (verbosePluginApply) println("Project : ${project.name}")
+        if (verbosePluginApply) logInfo("Project : ${project.name}")
         project.allprojects.filter { it !== project }.forEach { module ->
-            if (verbosePluginApply) println("Module : ${module.name}")
-            if (verbosePluginApply) println("apply plugin : ${ProjectCatalogPlugin.CATALOG_PLUGIN_ID}")
+            if (verbosePluginApply) logInfo("Module : ${module.name}")
+            if (verbosePluginApply) logInfo("apply plugin : ${ProjectCatalogPlugin.CATALOG_PLUGIN_ID}")
             module.plugins.apply(ProjectCatalogPlugin.CATALOG_PLUGIN_ID)
             kotlin.runCatching {
                 module.extensions.findByName(CATALOG_EXTENSION_NAME) as? CatalogExtension
@@ -127,12 +206,12 @@ open class CatalogRootExtension @Inject constructor(
             stringList(key = module.name, default = { emptyList() })
                 .takeIf { it.isNotEmpty() }?.let { plugins ->
                     plugins.forEach { plugin ->
-                        if (verbosePluginApply) println("apply plugin : $plugin")
+                        if (verbosePluginApply) logInfo("apply plugin : $plugin")
                         module.plugins.apply(plugin)
                     }
-                    if (verbosePluginApply) println("** success **")
+                    if (verbosePluginApply) logInfo("** success **")
                 } ?: run {
-                if (verbosePluginApply) println("!!! Warning... no plugins found in catalog")
+                if (verbosePluginApply) logInfo("!!! Warning... no plugins found in catalog")
             }
         }
     }
@@ -155,18 +234,19 @@ open class CatalogRootExtension @Inject constructor(
     }
 
     fun with(key: String, block: CatalogScope.() -> Unit) = CatalogScope(
+        project = project,
         keyBase = key,
         delegate = this
     ).block()
 
     fun string(key: String, default: (key: String) -> String = DEFAULT_STRING): String {
         val value = rawCatalog[key] ?: run {
-            if (verboseReadValue) println("value not found for key: $key")
+            if (verboseReadValue) logInfo("value not found for key: $key")
             return default(key)
         }
-        if (verboseReadValue) println("key: $key | value: $value")
+        if (verboseReadValue) logInfo("key: $key | value: $value")
         if (!value.contains('$')) return value
-        if (verboseReadValue) println("key: $key | value contains placeholder, start replacement...")
+        if (verboseReadValue) logInfo("key: $key | value contains placeholder, start replacement...")
         val regexValue = Regex("""(\$\{(.*?)\})""")
         val valueBuilder = StringBuilder(value)
         var indexOffset = 0
@@ -184,7 +264,7 @@ open class CatalogRootExtension @Inject constructor(
             } else {
                 placeHolderKeyEnd
             }
-            if (verboseReadValue) println("absolute placeHolderKey : $placeHolderKey")
+            if (verboseReadValue) logInfo("absolute placeHolderKey : $placeHolderKey")
             //recurse retrieve placeholder holder value
             val placeHolderValue = string(placeHolderKey) ?: kotlin.run {
                 throw GradleException("placeholder key $placeHolderKey not found for key $key with value $value")
@@ -199,7 +279,7 @@ open class CatalogRootExtension @Inject constructor(
                 indexOffset += (placeHolderValue.length - it.count())
             }
         }
-        if (verboseReadValue) println("... end replacement -> key: $key | value: $valueBuilder")
+        if (verboseReadValue) logInfo("... end replacement -> key: $key | value: $valueBuilder")
         return valueBuilder.toString()
     }
 
@@ -225,11 +305,17 @@ open class CatalogRootExtension @Inject constructor(
             JavaVersion.values().find { it.name == value } ?: default(key)
         }
 
+    fun filter(
+        predicate: (key: String) -> Boolean
+    ) = rawCatalog.filter { predicate(it.key) }
+
+    fun forEach(block: (key: String, value: String) -> Unit) = rawCatalog.forEach {
+        block(it.key, it.value)
+    }
+
 }
 
-open class CatalogExtension @Inject constructor(
-    private val project: Project
-) {
+open class CatalogExtension {
     private lateinit var delegate: CatalogRootExtension
 
     internal fun delegate(catalog: CatalogRootExtension) {
@@ -251,4 +337,10 @@ open class CatalogExtension @Inject constructor(
 
     fun javaVersion(key: String, default: (key: String) -> JavaVersion = DEFAULT_JAVA_VERSION) =
         delegate.javaVersion(key = key, default = default)
+
+    fun filter(predicate: (key: String) -> Boolean) =
+        delegate.filter(predicate = predicate)
+
+    fun forEach(block: (key: String, value: String) -> Unit) = delegate.forEach(block = block)
+
 }
