@@ -1,7 +1,7 @@
 val domainName = "com.tezov"
-val tezovPluginVersion = "1.0.0"
-val androidPluginVersion = "8.0.2+"
-val alphaVersion:Int? = 12
+val tezovPluginVersion = "1.0.1"
+val androidPluginVersion = "8.0.2"
+val alphaVersion:Int? = null
 val domainVersion = StringBuilder().apply {
     append(tezovPluginVersion)
     append("-")
@@ -40,14 +40,14 @@ gradlePlugin {
             implementationClass = "${name}.ProjectConfigPlugin"
             displayName = "Tezov plugin project - Config"
             description = "user friendly tool to setup Android plugin application and library"
-            tags.set(listOf("android", "tezov"))
+            tags.set(listOf("android", "tezov", "config", "configuration", "debug", "proguard"))
         }
         create("${domainName}.${project.name}.catalog") {
             id = name
             implementationClass = "${name}.ProjectCatalogPlugin"
             displayName = "Tezov plugin project - Catalog"
-            description = "user friendly tool to share catalog of constant between project"
-            tags.set(listOf("android", "tezov"))
+            description = "user friendly tool to share catalog of constants and dependencies between project modules."
+            tags.set(listOf("android", "tezov", "catalog", "dependency", "dependencies"))
         }
     }
 }

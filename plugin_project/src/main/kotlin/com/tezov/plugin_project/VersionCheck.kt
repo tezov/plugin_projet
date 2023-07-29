@@ -1,6 +1,7 @@
 package com.tezov.plugin_project
 
-import com.tezov.plugin_project.config.ConfigExtension.Companion.ANDROID_PLUGIN_CLASSPATH
+import com.tezov.plugin_project.Logger.logInfo
+import com.tezov.plugin_project.config.ProjectConfigPlugin.Companion.ANDROID_PLUGIN_CLASSPATH
 import org.gradle.api.Project
 import org.gradle.util.GradleVersion
 import java.io.File
@@ -14,9 +15,8 @@ object VersionCheck {
 
     fun gradle(project: Project, pluginName: String) {
         if (GradleVersion.current() < MIN_VERSION_GRADLE) {
-            Logger.logError(
-                "${project.name}: gradle ${MIN_VERSION_GRADLE.version} or greater is required by $pluginName.",
-                project
+            project.logInfo(
+                "${project.name}: gradle ${MIN_VERSION_GRADLE.version} or greater is required by $pluginName."
             )
             return
         }
@@ -42,15 +42,12 @@ object VersionCheck {
             }
             androidPluginCurrentVersion?.let {
                 if (it < MIN_VERSION_ANDROID) {
-                    Logger.logError(
-                        "${project.name}: android classpath ${MIN_VERSION_ANDROID.version} or greater is required by $pluginName.",
-                        project
-                    )
+                    project.logInfo(
+                        "${project.name}: android classpath ${MIN_VERSION_ANDROID.version} or greater is required by $pluginName.")
                 }
             } ?: kotlin.run {
-                Logger.logWarning(
-                    "${project.name}: failed to check android classpath version in settings.gradle.kts. Plugin $pluginName required min version $${MIN_VERSION_ANDROID.version}",
-                    project
+                project.logInfo(
+                    "${project.name}: failed to check android classpath version in settings.gradle.kts. Plugin $pluginName required min version $${MIN_VERSION_ANDROID.version}"
                 )
             }
         }

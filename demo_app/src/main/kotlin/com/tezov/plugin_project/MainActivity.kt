@@ -1,4 +1,4 @@
-package com.tezov.plugin_project.demo
+package com.tezov.plugin_project
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -13,7 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
-import com.tezov.plugin_project.demo.ui.theme.PluginAndroidProjectDemoTheme
+import com.tezov.plugin_project.ui.theme.PluginAndroidProjectDemoTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,7 +38,7 @@ fun Greeting() {
         modifier = Modifier.fillMaxSize()
     ) {
         Text(
-            text = "Tezov - Plugin Project Demo",
+            text = Greeting.string,
             modifier = Modifier.align(Alignment.Center),
             fontSize = 24.sp
 

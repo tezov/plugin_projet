@@ -13,7 +13,7 @@
         android:theme="@style/Theme.PluginTezovProjectDemo"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name="com.tezov.plugin_project.MainActivity"
             android:exported="true"
             android:label="@string/app_name">
             <intent-filter>

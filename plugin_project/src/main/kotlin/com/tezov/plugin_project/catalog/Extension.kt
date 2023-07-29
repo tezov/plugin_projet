@@ -2,27 +2,28 @@ package com.tezov.plugin_project.catalog
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.tezov.plugin_project.Logger
+import com.tezov.plugin_project.Logger.logInfo
+import com.tezov.plugin_project.Logger.throwException
 import com.tezov.plugin_project.PropertyDelegate
 import com.tezov.plugin_project.catalog.CatalogScope.Companion.DEFAULT_INT
 import com.tezov.plugin_project.catalog.CatalogScope.Companion.DEFAULT_JAVA_VERSION
 import com.tezov.plugin_project.catalog.CatalogScope.Companion.DEFAULT_STRING
 import com.tezov.plugin_project.catalog.CatalogScope.Companion.DEFAULT_STRING_LIST
 import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_EXTENSION_NAME
-import org.gradle.api.GradleException
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import java.io.File
 import java.net.URL
 import javax.inject.Inject
 
-class CatalogScope(
+open class CatalogScope(
     private val project: Project,
     private val keyBase: String,
     private val delegate: CatalogRootExtension,
 ) {
 
     internal companion object {
+
         val DEFAULT_STRING = { key: String ->
             throw IndexOutOfBoundsException("key $key not found")
         }
@@ -44,50 +45,64 @@ class CatalogScope(
     private fun String.absolute() = if (isNotBlank()) "$keyBase.$this" else keyBase
 
     private fun String.relative() = if (isNotBlank()) {
-        this.replaceFirst(keyBase, "").drop(1)
+        replaceFirst(keyBase, "").dropWhile { it == '.' }
     } else ""
 
-    fun checkDependenciesVersion() {
-        Logger.logInfo("**$keyBase checkDependenciesVersion")
-        forEach { key, dependencyFullName ->
+    fun checkDependenciesVersion(
+        ignore_alpha: Boolean = false,
+        ignore_beta: Boolean = false,
+        ignore_rc: Boolean = false
+    ) {
+        forEach { key, _ ->
+            val dependencyFullName = string(key).lowercase()
             val indexOfVersionSeparator = dependencyFullName.lastIndexOf(':')
             if (indexOfVersionSeparator == -1) {
                 if (delegate.verboseCheckDependenciesVersion) {
-                    Logger.logInfo("$key: version invalid $dependencyFullName")
+                    project.logInfo("${key.absolute()}: version invalid $dependencyFullName")
                 }
             } else {
                 val dependencyName = dependencyFullName.substring(0, indexOfVersionSeparator)
                 val dependencyVersion = dependencyFullName.substring(indexOfVersionSeparator + 1)
                 if (delegate.verboseCheckDependenciesVersion) {
-                    Logger.logInfo("$key:$dependencyVersion check")
+                    project.logInfo("${key.absolute()}:$dependencyFullName check")
                 }
                 kotlin.runCatching {
                     val resolvedVersions = project.configurations.detachedConfiguration(
                         project.dependencies.create("$dependencyName:+")
                     ).resolvedConfiguration.resolvedArtifacts
                     resolvedVersions.filter {
-                        it.id.componentIdentifier.displayName.startsWith(dependencyName)
-                    }.maxByOrNull { it.moduleVersion.id.version }?.moduleVersion?.id?.version?.let {
+                        val displayName = it.id.componentIdentifier.displayName.lowercase()
+                        val version = it.moduleVersion.id.version.lowercase()
+                        displayName.startsWith(dependencyName)
+                                && (!ignore_alpha || dependencyVersion.contains("alpha") || !version.contains(
+                            "alpha"
+                        ))
+                                && (!ignore_beta || dependencyVersion.contains("beta") || !version.contains(
+                            "beta"
+                        ))
+                                && (!ignore_rc || dependencyVersion.contains("rc") || !version.contains(
+                            "rc"
+                        ))
+                    }.map { it.moduleVersion.id.version.lowercase() }.maxByOrNull { it }?.let {
                         if (it != dependencyVersion) {
-                            Logger.logInfo("$key: can be updated to $it")
+                            project.logInfo("${key.absolute()}: can be updated from $dependencyVersion to $it")
                         }
                     } ?: run {
                         if (delegate.verboseCheckDependenciesVersion) {
-                            Logger.logInfo("$key: $dependencyName latest version not found in")
+                            project.logInfo("${key.absolute()}: $dependencyName latest version not found in")
                             resolvedVersions.forEach {
-                                Logger.logInfo(">> ${it.id.displayName}")
+                                project.logInfo(">> ${it.id.displayName}")
                             }
                         }
                     }
                 }.onFailure {
                     if (delegate.verboseCheckDependenciesVersion) {
-                        Logger.logInfo("$key: failed to retrieve latest version")
+                        project.logInfo("${key.absolute()}:$dependencyFullName failed to retrieve latest version")
                     }
                 }
             }
 
         }
-        Logger.logInfo("**")
     }
 
     fun with(key: String, block: CatalogScope.() -> Unit) =
@@ -157,8 +172,6 @@ open class CatalogRootExtension @Inject constructor(
     var verboseReadValue by PropertyDelegate { false }
     var verboseCheckDependenciesVersion by PropertyDelegate { false }
 
-    var checkDependenciesVersion by PropertyDelegate { false }
-
     var jsonFile by PropertyDelegate<JsonFile?> { null }
     private val rawCatalog = mutableMapOf<String, String>()
 
@@ -166,23 +179,23 @@ open class CatalogRootExtension @Inject constructor(
         override val data: String
             get() = File(path).also {
                 if (!it.exists() || !it.isFile) {
-                    throw GradleException("catalog file not found")
+                    project.throwException("catalog file not found")
                 }
-                if (verboseCatalogBuild) Logger.logInfo("retrieve json catalog from file $path")
+                if (verboseCatalogBuild) project.logInfo("retrieve json catalog from file $path")
             }.readText()
     }
 
     fun jsonFromUrl(href: String) = object : JsonFile {
         override val data: String
             get() = URL(href).also {
-                if (verboseCatalogBuild) Logger.logInfo("retrieve json catalog from url $href")
+                if (verboseCatalogBuild) project.logInfo("retrieve json catalog from url $href")
             }.readText()
     }
 
     fun jsonFromString(data: String) = object : JsonFile {
         override val data: String
             get() = data.also {
-                if (verboseCatalogBuild) Logger.logInfo("retrieve json catalog from string")
+                if (verboseCatalogBuild) project.logInfo("retrieve json catalog from string")
             }
     }
 
@@ -193,9 +206,9 @@ open class CatalogRootExtension @Inject constructor(
 
     private fun buildRawCatalog() {
         val uri = this.jsonFile ?: run {
-            throw GradleException("catalog path is null")
+            project.throwException("catalog path is null")
         }
-        if (verboseCatalogBuild) Logger.logInfo("Read catalog json : $uri")
+        if (verboseCatalogBuild) project.logInfo("Read catalog json : $uri")
         val objectMapper = ObjectMapper()
         val inputMap = objectMapper.readValue(
             uri.data,
@@ -204,32 +217,32 @@ open class CatalogRootExtension @Inject constructor(
         flattenMap(inputMap, rawCatalog)
         if (verboseCatalogBuild) {
             rawCatalog.forEach { key, value ->
-                Logger.logInfo("$key :: $value")
+                project.logInfo("$key :: $value")
             }
         }
 
     }
 
     private fun applyProjectsPlugin() {
-        if (verbosePluginApply) Logger.logInfo("Project : ${project.name}")
+        if (verbosePluginApply) project.logInfo("Project : ${project.name}")
         project.allprojects.filter { it !== project }.forEach { module ->
-            if (verbosePluginApply) Logger.logInfo("Module : ${module.name}")
-            if (verbosePluginApply) Logger.logInfo("apply plugin : ${ProjectCatalogPlugin.CATALOG_PLUGIN_ID}")
+            if (verbosePluginApply) project.logInfo("Module : ${module.name}")
+            if (verbosePluginApply) project.logInfo("apply plugin : ${ProjectCatalogPlugin.CATALOG_PLUGIN_ID}")
             module.plugins.apply(ProjectCatalogPlugin.CATALOG_PLUGIN_ID)
             kotlin.runCatching {
                 module.extensions.findByName(CATALOG_EXTENSION_NAME) as? CatalogExtension
             }.getOrNull()?.delegate(this) ?: run {
-                throw GradleException("catalog plugin not successfully apply to ${project.name}")
+                project.throwException("catalog plugin not successfully apply to ${project.name}")
             }
             stringList(key = module.name, default = { emptyList() })
                 .takeIf { it.isNotEmpty() }?.let { plugins ->
                     plugins.forEach { plugin ->
-                        if (verbosePluginApply) Logger.logInfo("apply plugin : $plugin")
+                        if (verbosePluginApply) project.logInfo("apply plugin : $plugin")
                         module.plugins.apply(plugin)
                     }
-                    if (verbosePluginApply) Logger.logInfo("** success **")
+                    if (verbosePluginApply) project.logInfo("** success **")
                 } ?: run {
-                if (verbosePluginApply) Logger.logInfo("!!! Warning... no plugins found in catalog")
+                if (verbosePluginApply) project.logInfo("!!! Warning... no plugins found in catalog")
             }
         }
     }
@@ -267,12 +280,12 @@ open class CatalogRootExtension @Inject constructor(
 
     fun stringOrNull(key: String): String? {
         val value = rawCatalog[key] ?: run {
-            if (verboseReadValue) Logger.logInfo("value not found for key: $key")
+            if (verboseReadValue) project.logInfo("value not found for key: $key")
             return null
         }
-        if (verboseReadValue) Logger.logInfo("key: $key | value: $value")
+        if (verboseReadValue) project.logInfo("key: $key | value: $value")
         if (!value.contains('$')) return value
-        if (verboseReadValue) Logger.logInfo("key: $key | value contains placeholder, start replacement...")
+        if (verboseReadValue) project.logInfo("key: $key | value contains placeholder, start replacement...")
         val regexValue = Regex("""(\$\{(.*?)\})""")
         val valueBuilder = StringBuilder(value)
         var indexOffset = 0
@@ -290,10 +303,10 @@ open class CatalogRootExtension @Inject constructor(
             } else {
                 placeHolderKeyEnd
             }
-            if (verboseReadValue) Logger.logInfo("absolute placeHolderKey : $placeHolderKey")
+            if (verboseReadValue) project.logInfo("absolute placeHolderKey : $placeHolderKey")
             //recurse retrieve placeholder holder value
-            val placeHolderValue = string(placeHolderKey) ?: kotlin.run {
-                throw GradleException("placeholder key $placeHolderKey not found for key $key with value $value")
+            val placeHolderValue = stringOrNull(placeHolderKey) ?: kotlin.run {
+                project.throwException("placeholder key $placeHolderKey not found for key $key with value $value")
             }
             //replace placeholder by placeholder value in value
             it.groups[1]?.range?.let {
@@ -305,7 +318,9 @@ open class CatalogRootExtension @Inject constructor(
                 indexOffset += (placeHolderValue.length - it.count())
             }
         }
-        if (verboseReadValue) Logger.logInfo("... end replacement -> key: $key | value: $valueBuilder")
+        if (verboseReadValue) project.logInfo(
+            "... end replacement -> key: $key | value: $valueBuilder"
+        )
         return valueBuilder.toString()
     }
 
@@ -396,7 +411,6 @@ open class CatalogExtension {
     inline val String.stringList get() = stringList(key = this)
     inline val String.int get() = int(key = this)
     inline val String.javaVersion get() = javaVersion(key = this)
-
 
 
 }

@@ -1,26 +1,30 @@
 package com.tezov.plugin_project.config
 
-import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
+import com.android.build.api.dsl.AndroidSourceSet
+import com.android.build.api.dsl.ApplicationBuildType
+import com.android.build.api.dsl.ApplicationExtension
+import com.tezov.plugin_project.Logger.logInfo
+import com.tezov.plugin_project.Utils.normalizePath
+import com.tezov.plugin_project.config.ExtensionCommon.Companion.invoke
+import com.tezov.plugin_project.config.Proguard.PlaceHolder
+import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
+import org.gradle.api.Task
+import java.io.File
+
 
 internal class ConfigureAndroidApp(
-    project: Project,
-    configExtension: ConfigExtension,
-    private val androidExtension: BaseAppModuleExtension,
-) : ConfigureAndroidBase(
-    project = project,
-    configExtension = configExtension,
-) {
+    val project: Project,
+    val configExtension: ExtensionApp,
+    private val androidExtension: ApplicationExtension,
+):ConfigureAndroidCommon.Protocol {
 
-    val applicationId get() = "${configExtension.configuration.domain}.${project.rootProject.name}"
+    val common = ConfigureAndroidCommon(project, this)
 
-    val packageName get() = "${configExtension.configuration.domain}.${project.rootProject.name}${configExtension.build.type.suffix}"
-
-    val isPackageNameValid get() = configExtension.build.type != BuildType.UNKNOWN
-
-    override fun onApply() {
-        configureAndroidApp()
-//        configureProguardApp()
+    fun apply() {
+        configureAndroid()
+        configureProguard()
+        common.apply()
     }
 
     override fun afterEvaluated() {
@@ -35,10 +39,11 @@ internal class ConfigureAndroidApp(
 //        tasksProjectRegisterInput()
     }
 
-    private fun configureAndroidApp() {
-        androidExtension.namespace = applicationId
+    private fun configureAndroid() {
+        androidExtension.namespace = configExtension.applicationId
         defaultConfig()
-        androidExtension.sourceSets.configure(
+        common.sourceSet(
+            sourceSets = androidExtension.sourceSets,
             hasResources = true,
             hasAssets = true
         )
@@ -66,24 +71,23 @@ internal class ConfigureAndroidApp(
             getByName("debug") {
                 applicationIdSuffix = BuildType.DEBUG.suffix
                 isDebuggable = true
-                isMinifyEnabled = configExtension.debug.minify
+                isMinifyEnabled = false
                 isShrinkResources = false
-                buildConfigDebug(true)
+                common.buildConfig(this, BuildConfig.DEBUG_ONLY, true)
             }
             getByName("release") {
                 applicationIdSuffix = BuildType.RELEASE.suffix
                 isDebuggable = configExtension.release.enableDebug
-                if (isDebuggable) {
+                if (configExtension.release.enableDebug) {
                     isMinifyEnabled = configExtension.debug.minify
-                    isShrinkResources = false
+                    isShrinkResources = configExtension.debug.minify
                 } else {
-                    isMinifyEnabled = configExtension.release.minify
-                    isShrinkResources = configExtension.release.minify
+                    isMinifyEnabled = true
+                    isShrinkResources = true
                 }
-                buildConfigDebug(configExtension.release.enableDebug)
+                common.buildConfig(this, BuildConfig.DEBUG_ONLY, configExtension.release.enableDebug)
             }
         }
-
     }
 
     private fun lint() {
@@ -95,16 +99,43 @@ internal class ConfigureAndroidApp(
 
     }
 
-    private fun tasksProjectRegister() {
-        //refactor from java
+    private fun configureProguard() {
+        common.proguard(
+            buildTypes = androidExtension.buildTypes,
+            proguards = configExtension.release.proguards,
+            keepProguardsDebug = configExtension.release.keepProguardsDebug,
+            keepProguardsRelease = configExtension.release.keepProguardsRelease,
+            enableDebug = configExtension.release.enableDebug,
+            keepProguard = configExtension.debug.keepProguard,
+            repackage = configExtension.debug.repackage,
+            repackageName = configExtension.release.repackageName,
+            keepSourceFile = configExtension.debug.keepSourceFile,
+            obfuscate = configExtension.debug.obfuscate,
+        )
     }
 
-    private fun tasksProjectRegisterDependsOn() {
-        //refactor from java
+    override val commonExtension: ExtensionCommon
+        get() = configExtension.common
+
+    override fun initCurrentBuildType(graphTasks: List<Task>) {
+        configExtension.initCurrentBuildType(graphTasks)
     }
 
-    private fun tasksProjectRegisterInput() {
-        //refactor from java
+    override fun proguardAdd(
+        buildType: com.android.build.api.dsl.BuildType,
+        element: File,
+        placeholders: Map<String, String>?
+    ) {
+        if (androidExtension !is ApplicationBuildType) return
+        androidExtension.proguardFiles.add(element)
+    }
+
+    override fun proguardAddAll(
+        buildType: com.android.build.api.dsl.BuildType,
+        element: Collection<File>
+    ) {
+        if (androidExtension !is ApplicationBuildType) return
+        androidExtension.proguardFiles.addAll(element)
     }
 
 }

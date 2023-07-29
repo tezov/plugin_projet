@@ -1,24 +1,34 @@
 package com.tezov.plugin_project
 
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 
 object Logger {
 
-    internal fun logInfo(data: String, project:Project? = null) {
-        project?.logger?.info(data) ?: run {
-            println(data)
+    internal fun Project.logInfo(data: String) {
+        "${project.name}: $data".let {
+            if(logger.isInfoEnabled) logger.info(it)
+            else println(it)
         }
     }
 
-    internal fun logError(data: String, project:Project? = null) {
-        project?.logger?.error(data) ?: run {
-            println(data)
+    internal fun Project.logError(data: String) {
+        "${project.name}: $data".let {
+            if(logger.isErrorEnabled) logger.info(it)
+            else println(it)
         }
     }
 
-    internal fun logWarning(data: String, project:Project? = null) {
-        project?.logger?.warn(data) ?: run {
-            println(data)
+    internal fun Project.logWarning(data: String) {
+        "${project.name}: $data".let {
+            if(logger.isWarnEnabled) logger.info(it)
+            else println(it)
+        }
+    }
+
+    internal fun Project.throwException(data: String): Nothing {
+        "${project.name}: $data".let {
+            throw GradleException(it)
         }
     }
 

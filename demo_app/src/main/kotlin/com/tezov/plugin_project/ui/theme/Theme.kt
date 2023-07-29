@@ -1,4 +1,4 @@
-package com.tezov.plugin_project.demo.ui.theme
+package com.tezov.plugin_project.ui.theme
 
 import android.app.Activity
 import android.os.Build
