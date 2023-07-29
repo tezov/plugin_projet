@@ -1,7 +1,6 @@
 package com.tezov.plugin_project.catalog
 
-import com.tezov.plugin_project.GradleVersionCheck
-import com.tezov.plugin_project.config.ProjectConfigPlugin
+import com.tezov.plugin_project.VersionCheck
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
@@ -13,8 +12,7 @@ class ProjectCatalogPlugin : Plugin<Project> {
     }
 
     override fun apply(project: Project) {
-        GradleVersionCheck(project, CATALOG_PLUGIN_ID)
-
+        VersionCheck.gradle(project, CATALOG_PLUGIN_ID)
         project.takeIf { it === project.rootProject }?.let {
             project.extensions.create(CATALOG_EXTENSION_NAME, CatalogRootExtension::class.java)
         } ?: run {

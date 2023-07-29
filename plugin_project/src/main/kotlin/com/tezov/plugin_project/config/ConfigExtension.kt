@@ -156,12 +156,13 @@ open class ConfigExtension @Inject constructor(
     }
 
     companion object {
-        private const val ANDROID_PLUGIN_NAME = "android"
+        internal const val ANDROID_PLUGIN_CLASSPATH = "com.android.tools.build:gradle"
+        internal const val ANDROID_EXTENSION_NAME = "android"
     }
 
     fun configureAndroidPlugin() {
         val androidExtension = kotlin.runCatching {
-            project.extensions.findByName(ANDROID_PLUGIN_NAME)
+            project.extensions.findByName(ANDROID_EXTENSION_NAME)
         }.getOrNull()?.takeIf {
             it is LibraryExtension || it is BaseAppModuleExtension
         }

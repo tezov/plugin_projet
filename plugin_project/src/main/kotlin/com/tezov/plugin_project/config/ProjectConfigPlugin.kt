@@ -1,6 +1,7 @@
 package com.tezov.plugin_project.config
 
-import com.tezov.plugin_project.GradleVersionCheck
+import com.tezov.plugin_project.VersionCheck
+import com.tezov.plugin_project.catalog.ProjectCatalogPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
@@ -12,7 +13,8 @@ class ProjectConfigPlugin : Plugin<Project> {
     }
 
     override fun apply(project: Project) {
-        GradleVersionCheck(project, CONFIG_PLUGIN_ID)
+        VersionCheck.gradle(project, CONFIG_PLUGIN_ID)
+        VersionCheck.androidClasspath(project, ProjectCatalogPlugin.CATALOG_PLUGIN_ID)
         project.extensions.create(CONFIG_EXTENSION_NAME, ConfigExtension::class.java)
     }
 
