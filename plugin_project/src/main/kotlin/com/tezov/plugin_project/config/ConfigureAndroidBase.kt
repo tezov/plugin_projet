@@ -83,11 +83,4 @@ internal abstract class ConfigureAndroidBase(
 
     }
 
-    fun Packaging.configure(){
-        if (configExtension.configuration.excludeAllMetaInf) {
-            resources {
-                excludes.add("META-INF/**")
-            }
-        }
-    }
 }

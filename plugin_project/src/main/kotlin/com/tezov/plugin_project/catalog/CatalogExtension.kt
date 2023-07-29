@@ -46,37 +46,6 @@ class CatalogScope(
         this.replaceFirst(keyBase, "").drop(1)
     } else ""
 
-    fun with(key: String, block: CatalogScope.() -> Unit) =
-        delegate.with(key = key.absolute(), block = block)
-
-    fun string(key: String = "", default: (key: String) -> String = DEFAULT_STRING) =
-        delegate.string(key = key.absolute(), default = default)
-
-    fun stringList(key: String = "", default: (key: String) -> List<String> = DEFAULT_STRING_LIST) =
-        delegate.stringList(key = key.absolute(), default = default)
-
-    fun int(key: String = "", default: (key: String) -> Int = DEFAULT_INT) =
-        delegate.int(key = key.absolute(), default = default)
-
-    fun javaVersion(
-        key: String = "",
-        default: (key: String) -> JavaVersion = DEFAULT_JAVA_VERSION
-    ) = delegate.javaVersion(key = key.absolute(), default = default)
-
-    fun filter(predicate: (key: String) -> Boolean) = delegate.filter {
-        it.isValid() && predicate(it.relative())
-    }.mapKeys {
-        it.key.relative()
-    }
-
-    fun forEach(block: (key: String, value: String) -> Unit) = delegate.filter {
-        it.isValid()
-    }.mapKeys {
-        it.key.relative()
-    }.forEach {
-        block(it.key, it.value)
-    }
-
     fun checkDependenciesVersion() {
         delegate.logInfo("**$keyBase checkDependenciesVersion")
         forEach { key, value ->
@@ -120,6 +89,59 @@ class CatalogScope(
         }
         delegate.logInfo("**")
     }
+
+    fun with(key: String, block: CatalogScope.() -> Unit) =
+        delegate.with(key = key.absolute(), block = block)
+
+    fun filter(predicate: (key: String) -> Boolean) = delegate.filter {
+        it.isValid() && predicate(it.relative())
+    }.mapKeys {
+        it.key.relative()
+    }
+
+    fun forEach(block: (key: String, value: String) -> Unit) = delegate.filter {
+        it.isValid()
+    }.mapKeys {
+        it.key.relative()
+    }.forEach {
+        block(it.key, it.value)
+    }
+
+    fun stringOrNull(key: String) =
+        delegate.stringOrNull(key = key)
+
+    fun stringListOrNull(key: String) =
+        delegate.stringListOrNull(key = key)
+
+    fun intOrNull(key: String) = delegate.intOrNull(key = key)
+
+    fun javaVersionOrNull(key: String) = delegate.javaVersionOrNull(key = key)
+
+
+    fun string(key: String = "", default: (key: String) -> String = DEFAULT_STRING) =
+        delegate.string(key = key.absolute(), default = default)
+
+    fun stringList(key: String = "", default: (key: String) -> List<String> = DEFAULT_STRING_LIST) =
+        delegate.stringList(key = key.absolute(), default = default)
+
+    fun int(key: String = "", default: (key: String) -> Int = DEFAULT_INT) =
+        delegate.int(key = key.absolute(), default = default)
+
+    fun javaVersion(
+        key: String = "",
+        default: (key: String) -> JavaVersion = DEFAULT_JAVA_VERSION
+    ) = delegate.javaVersion(key = key.absolute(), default = default)
+
+
+    inline val String.stringOrNull get() = stringOrNull(key = this)
+    inline val String.stringListOrNull get() = stringListOrNull(key = this)
+    inline val String.intOrNull get() = intOrNull(key = this)
+    inline val String.javaVersionOrNull get() = javaVersionOrNull(key = this)
+
+    inline val String.string get() = string(key = this)
+    inline val String.stringList get() = stringList(key = this)
+    inline val String.int get() = int(key = this)
+    inline val String.javaVersion get() = javaVersion(key = this)
 
 }
 
@@ -233,16 +255,24 @@ open class CatalogRootExtension @Inject constructor(
         }
     }
 
+    fun filter(
+        predicate: (key: String) -> Boolean
+    ) = rawCatalog.filter { predicate(it.key) }
+
+    fun forEach(block: (key: String, value: String) -> Unit) = rawCatalog.forEach {
+        block(it.key, it.value)
+    }
+
     fun with(key: String, block: CatalogScope.() -> Unit) = CatalogScope(
         project = project,
         keyBase = key,
         delegate = this
     ).block()
 
-    fun string(key: String, default: (key: String) -> String = DEFAULT_STRING): String {
+    fun stringOrNull(key: String): String? {
         val value = rawCatalog[key] ?: run {
             if (verboseReadValue) logInfo("value not found for key: $key")
-            return default(key)
+            return null
         }
         if (verboseReadValue) logInfo("key: $key | value: $value")
         if (!value.contains('$')) return value
@@ -283,35 +313,41 @@ open class CatalogRootExtension @Inject constructor(
         return valueBuilder.toString()
     }
 
+    fun stringListOrNull(key: String): List<String>? = stringOrNull(key = key)?.split(",")
+
+    fun intOrNull(key: String): Int? = stringOrNull(key = key)?.toIntOrNull()
+
+    fun javaVersionOrNull(key: String): JavaVersion? = stringOrNull(key = key)?.let { value ->
+        JavaVersion.values().find { it.name == value }
+    }
+
+
+    fun string(key: String, default: (key: String) -> String = DEFAULT_STRING) =
+        stringOrNull(key) ?: default(key)
+
     fun stringList(
         key: String,
         default: (key: String) -> List<String> = DEFAULT_STRING_LIST
-    ): List<String> = string(key = key, default = {
-        default(key).joinToString(",")
-    }).takeIf { it.isNotBlank() }?.split(",") ?: emptyList()
+    ) = stringListOrNull(key = key) ?: default(key)
 
-    fun int(key: String, default: (key: String) -> Int = DEFAULT_INT): Int =
-        string(key = key, default = {
-            default(key).toString()
-        }).toIntOrNull() ?: default(key)
+    fun int(key: String, default: (key: String) -> Int = DEFAULT_INT) =
+        intOrNull(key) ?: default(key)
 
     fun javaVersion(
         key: String,
         default: (key: String) -> JavaVersion = DEFAULT_JAVA_VERSION
-    ): JavaVersion =
-        string(key = key, default = {
-            default(key).toString()
-        }).let { value ->
-            JavaVersion.values().find { it.name == value } ?: default(key)
-        }
+    ): JavaVersion = javaVersionOrNull(key) ?: default(key)
 
-    fun filter(
-        predicate: (key: String) -> Boolean
-    ) = rawCatalog.filter { predicate(it.key) }
 
-    fun forEach(block: (key: String, value: String) -> Unit) = rawCatalog.forEach {
-        block(it.key, it.value)
-    }
+    inline val String.stringOrNull get() = stringOrNull(key = this)
+    inline val String.stringListOrNull get() = stringListOrNull(key = this)
+    inline val String.intOrNull get() = intOrNull(key = this)
+    inline val String.javaVersionOrNull get() = javaVersionOrNull(key = this)
+
+    inline val String.string get() = string(key = this)
+    inline val String.stringList get() = stringList(key = this)
+    inline val String.int get() = int(key = this)
+    inline val String.javaVersion get() = javaVersion(key = this)
 
 }
 
@@ -323,6 +359,22 @@ open class CatalogExtension {
     }
 
     fun with(key: String, block: CatalogScope.() -> Unit) = delegate.with(key = key, block = block)
+
+    fun filter(predicate: (key: String) -> Boolean) =
+        delegate.filter(predicate = predicate)
+
+    fun forEach(block: (key: String, value: String) -> Unit) = delegate.forEach(block = block)
+
+    fun stringOrNull(key: String) =
+        delegate.stringOrNull(key = key)
+
+    fun stringListOrNull(key: String) =
+        delegate.stringListOrNull(key = key)
+
+    fun intOrNull(key: String) = delegate.intOrNull(key = key)
+
+    fun javaVersionOrNull(key: String) = delegate.javaVersionOrNull(key = key)
+
 
     fun string(key: String, default: (key: String) -> String = DEFAULT_STRING) =
         delegate.string(key = key, default = default)
@@ -338,9 +390,17 @@ open class CatalogExtension {
     fun javaVersion(key: String, default: (key: String) -> JavaVersion = DEFAULT_JAVA_VERSION) =
         delegate.javaVersion(key = key, default = default)
 
-    fun filter(predicate: (key: String) -> Boolean) =
-        delegate.filter(predicate = predicate)
 
-    fun forEach(block: (key: String, value: String) -> Unit) = delegate.forEach(block = block)
+    inline val String.stringOrNull get() = stringOrNull(key = this)
+    inline val String.stringListOrNull get() = stringListOrNull(key = this)
+    inline val String.intOrNull get() = intOrNull(key = this)
+    inline val String.javaVersionOrNull get() = javaVersionOrNull(key = this)
+
+    inline val String.string get() = string(key = this)
+    inline val String.stringList get() = stringList(key = this)
+    inline val String.int get() = int(key = this)
+    inline val String.javaVersion get() = javaVersion(key = this)
+
+
 
 }

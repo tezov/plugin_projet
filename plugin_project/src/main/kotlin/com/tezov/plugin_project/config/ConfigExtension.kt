@@ -34,7 +34,6 @@ open class ConfigExtension @Inject constructor(
         val proguardPaths = mutableListOf<String>()
         val proguardConsumerPaths = mutableListOf<String>()
         val languages = mutableListOf<String>()
-        var excludeAllMetaInf by PropertyDelegate { false }
         var hasResources by PropertyDelegate { false }
         var hasAssets by PropertyDelegate { false }
     }
@@ -45,20 +44,25 @@ open class ConfigExtension @Inject constructor(
         var patch by PropertyDelegate { 0 }
         var alpha by PropertyDelegate<Int?> { null }
         var releaseCandidate by PropertyDelegate<Int?> { null }
-        val name get() = "$major.$minor.$patch".let {
-            if(alpha!=null && releaseCandidate!=null){
-                throw GradleException("can't be alpha and releaseCandidate...")
+        val name
+            get() = "$major.$minor.$patch".let {
+                if (alpha != null && releaseCandidate != null) {
+                    throw GradleException("can't be alpha and releaseCandidate...")
+                }
+                when {
+                    alpha != null -> "$it-alpha.${alpha}"
+                    releaseCandidate != null -> "${it}RC.${releaseCandidate}"
+                    else -> it
+                }
             }
-            when {
-                alpha!=null -> "$it-alpha.${alpha}"
-                releaseCandidate!=null -> "${it}RC.${releaseCandidate}"
-                else -> it
-            }
-        }
         val value get() = major * 10000 + minor * 100 + patch
     }
 
     open class Build {
+        fun BuildType.suffix(value: String) {
+            suffix = value
+        }
+
         var type by PropertyDelegate<BuildType>()
             internal set
     }
@@ -82,21 +86,21 @@ open class ConfigExtension @Inject constructor(
         private set
 
     var beforeVariant: ((buildType: BuildType) -> Unit)? = null
-        set(value) {
+        private set(value) {
             field?.let {
                 throw GradleException("beforeVariant can be used only once")
             }
             field = value
         }
     var whenEvaluated: ((buildType: BuildType) -> Unit)? = null
-        set(value) {
+        private set(value) {
             field?.let {
                 throw GradleException("beforeVariant can be used only once")
             }
             field = value
         }
     var whenReady: ((buildType: BuildType) -> Unit)? = null
-        set(value) {
+        private set(value) {
             field?.let {
                 throw GradleException("beforeVariant can be used only once")
             }
@@ -139,6 +143,18 @@ open class ConfigExtension @Inject constructor(
         lint.block()
     }
 
+    fun beforeVariant(block: (buildType: BuildType) -> Unit) {
+        beforeVariant = block
+    }
+
+    fun whenEvaluated(block: (buildType: BuildType) -> Unit) {
+        whenEvaluated = block
+    }
+
+    fun whenReady(block: (buildType: BuildType) -> Unit) {
+        whenReady = block
+    }
+
     companion object {
         private const val ANDROID_PLUGIN_NAME = "android"
     }
@@ -150,17 +166,19 @@ open class ConfigExtension @Inject constructor(
             it is LibraryExtension || it is BaseAppModuleExtension
         }
         androidExtension ?: return
-        when(androidExtension){
+        when (androidExtension) {
             is BaseAppModuleExtension -> ConfigureAndroidApp(
                 project = project,
                 configExtension = this,
                 androidExtension = androidExtension
             )
+
             is LibraryExtension -> ConfigureAndroidLibrary(
                 project = project,
                 configExtension = this,
                 androidExtension = androidExtension
             )
+
             else -> null
         }?.apply()
     }

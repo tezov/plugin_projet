@@ -37,11 +37,6 @@ internal class ConfigureAndroidLibrary(
             hasResources = configExtension.configuration.hasResources,
             hasAssets = configExtension.configuration.hasAssets
         )
-        androidExtension.packaging {
-            resources {
-                excludes.add("META-INF/**")
-            }
-        }
         build()
     }
 
@@ -63,10 +58,10 @@ internal class ConfigureAndroidLibrary(
                 buildConfigDebug(true)
             }
             getByName("release") {
-                if (configExtension.release.enableDebug) {
-                    isMinifyEnabled = configExtension.debug.minify
+                isMinifyEnabled = if (configExtension.release.enableDebug) {
+                    configExtension.debug.minify
                 } else {
-                    isMinifyEnabled = configExtension.release.minify
+                    configExtension.release.minify
                 }
                 buildConfigDebug(configExtension.release.enableDebug)
             }

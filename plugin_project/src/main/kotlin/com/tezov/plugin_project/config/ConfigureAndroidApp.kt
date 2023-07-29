@@ -42,7 +42,6 @@ internal class ConfigureAndroidApp(
             hasResources = true,
             hasAssets = true
         )
-        androidExtension.packaging.configure()
         build()
         lint()
     }
