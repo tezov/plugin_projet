@@ -1,6 +1,7 @@
 # Tezov plugin project
 
 ## What's New
+- add min version plugin checker - 1.0.0-8.0.2+-alpha.12
 - add dependencies version checker - 1.0.0-8.0.2+-alpha.11
 - allow url, file or string data for json catalog - 1.0.0-8.0.2+-alpha.11
 - change tag to show plugin version and minimum android version - 1.0.0-8.0.2+-alpha.10
@@ -11,25 +12,28 @@
 
 ## Description
 
-This project is a gradle plugin to auto setup the **android plugin application and library**
-- config - config android plugin
+This project is a gradle plugin to auto setup the **Android plugin application and library**
+
+- Config - config android plugin
   - version "major.minor.patch(-alpha.x|RC.x)
   - debug / release tool
-  - auto Jrunner path (must be inside the folder "'configuration.domain'.'module_name'.JUnit" and have JUnitRunner.kt name)
+  - auto Jrunner path (must be inside the folder "'configuration.domain'.'module_name'.JUnit" and have JUnitRunner.kt file name)
   - user friendly setup with build type available
   - auto sourceSet config
-- catalog - shared catalog of version and path between project
+  
+- Catalog - shared catalog between modules
   - auto apply plugin to modules
-  - shared variable
-  - shared dependency path/version
+  - shared custom variables
+  - shared dependencies path/version
+  - remote or local catalog
 
-** there are 2 plugins** Config Or Catalog, they are not dependant to each other. They can be used separately or together.
+** there are 2 plugins** Config and Catalog, they are not dependant to each other. They can be used separately or together.
 
 ## Next To Come, not working yet
 - proguard path + debug variables working
 
 ## How to install -Config- plugin
-- add classpath and repositories to **root setting project** settings.gradle.kts
+- add classpath and repositories to settings.gradle.kts
 
 ```
 buildscript {
@@ -50,7 +54,7 @@ buildscript {
 }
 ```
 
-- add plugin
+- add plugin to module
 
 ```
 plugins {
@@ -71,7 +75,6 @@ tezovConfig {
         //hasJUnitRunner = true
         //hasResources = false
         //hasAssets = false
-        //excludeAllMetaInf = true
         //languages.add("fr")
         //proguardPaths.add()
         //proguardConsumerPaths.add()
@@ -111,7 +114,7 @@ tezovConfig {
 //if you wanna add some logic where you need the current build type
 tezovConfig {
 
-     beforeVariant = { buildType: BuildType ->
+     beforeVariant { buildType: BuildType ->
          when(buildType){
               BuildType.DEBUG -> {}
               BuildType.RELEASE -> {}
@@ -119,7 +122,7 @@ tezovConfig {
          }
      }
      
-     whenEvaluated = { buildType: BuildType ->
+     whenEvaluated { buildType: BuildType ->
          when(buildType){
               BuildType.DEBUG -> {}
               BuildType.RELEASE -> {}
@@ -127,7 +130,7 @@ tezovConfig {
          }
      }
      
-     whenReady = { buildType: BuildType ->
+     whenReady { buildType: BuildType ->
          when(buildType){
               BuildType.DEBUG -> {}
               BuildType.RELEASE -> {}
@@ -139,7 +142,7 @@ tezovConfig {
 
 // here an example of application android plugin configuration (projectVersion and projectPath are constants coming from buildSrc)
 android {
-    //namespace, versionName, versionCode, applicationId, applicationIdSuffix will be done by tezov config
+    //namespace, sourceSet, versionName, versionCode, applicationId, applicationIdSuffix will be done by tezov config plugin
 
     compileSdk = projectVersion.defaultCompileSdk
     compileOptions {
@@ -164,6 +167,8 @@ android {
 
 // here an example of library android plugin configuration (projectVersion and projectPath are constants coming from buildSrc)
 android {
+    //namespace, sourceSet, will be done by tezov config plugin
+    
     compileSdk = projectVersion.defaultCompileSdk
     compileOptions {
         sourceCompatibility = projectVersion.javasource
@@ -186,7 +191,7 @@ android {
 
 
 ## How to install -Catalog- plugin
-- add classpath and repositories to **root setting project** settings.gradle.kts
+- add classpath and repositories to settings.gradle.kts
 
 ```
 buildscript {
@@ -247,13 +252,13 @@ tezovCatalog {
 }
 ```
 
-- Catalog look something like this
+- Catalog json
 
   - You can have any level of json
   - You can use any name except
-    - name of project modules are reserved to be used to apply plugin
+    - name of modules are reserved to be used to apply plugin
   - You can use placeholder ${path of another value with dot separator}
-  - if a property is the name of a module, an array of plugin is expected. All plugin will be auto apply to each modules and also the catalog plugin.
+  - If a property is the name of a module, an array of plugin is expected. All plugin will be auto apply and also the catalog plugin to each modules
 
 ```
 {
@@ -490,8 +495,7 @@ tezovCatalog {
 }
 ```
 
-
-- Then in build.gradle.kts of each module/app that have been defined in the json, you can use the catalog plugin
+- Then in build.gradle.kts of each module that have been defined in the json, you can use the catalog plugin
 
 ```
 android {
@@ -518,9 +522,9 @@ android {
         }
         packaging {
             resources {
-                excludes.addAll(
-                    stringList("projectPath.resourcesExcluded")
-                )
+                stringListOrNull("resourcesExcluded")?.let {
+                    excludes.addAll(it)
+                }
             }
         }
     }
@@ -542,6 +546,12 @@ dependencies {
 
 ```
 
+## Catalog functions
+- string, stringList, int, javaVersion (+OrNull version, and default value optionel)
+- forEach and Filter
+- with to scope yourself inside an json level
+- checkDependenciesVersion to manually to a manual check
+
 ## Pro and Cons
 
 pro
@@ -551,5 +561,4 @@ pro
 con
 - lost of notification from the IDE which tells you that there is a new version, but can do some check with checkDependenciesVersion
 - still need to manage classpath path
-
 
