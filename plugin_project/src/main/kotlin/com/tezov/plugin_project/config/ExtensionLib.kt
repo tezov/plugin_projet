@@ -37,18 +37,11 @@ open class ExtensionLib @Inject constructor(
             internal set
     }
 
-    open class Lint {
-        var abortOnError by PropertyDelegate { false }
-        var checkReleaseBuilds by PropertyDelegate { false }
-        val disable = mutableListOf<String>()
-    }
-
     internal val common = ExtensionCommon(project)
     val debug = factory.newInstance(Debug::class.java)
     val release = factory.newInstance(Release::class.java)
     val configuration = factory.newInstance(Configuration::class.java)
     internal val build = factory.newInstance(Build::class.java)
-    val lint = factory.newInstance(Lint::class.java)
 
     val nameSpace get() = findConfigExtensionApp()?.let {
         kotlin.runCatching { common.nameSpace(it) }.getOrNull()
@@ -80,10 +73,6 @@ open class ExtensionLib @Inject constructor(
 
     fun configuration(block: Configuration.() -> Unit) {
         configuration.block()
-    }
-
-    fun lint(block: Lint.() -> Unit) {
-        lint.block()
     }
 
     fun beforeVariant(block: (buildType: BuildType) -> Unit) {

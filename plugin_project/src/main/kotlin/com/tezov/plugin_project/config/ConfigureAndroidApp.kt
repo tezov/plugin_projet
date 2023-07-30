@@ -92,7 +92,7 @@ internal class ConfigureAndroidApp(
         androidExtension.lint {
             abortOnError = configExtension.lint.abortOnError
             checkReleaseBuilds = configExtension.lint.checkReleaseBuilds
-            disable.addAll(configExtension.lint.disable)
+            checkDependencies = configExtension.lint.checkDependencies
         }
 
     }

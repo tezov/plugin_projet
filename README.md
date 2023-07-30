@@ -115,6 +115,7 @@ tezovConfig {
     lint {
         //abortOnError = true
         //checkReleaseBuilds = true
+        //checkDependencies = true
     }
 
     configureAndroidPlugin() // !!!! MANDATORY !!!!

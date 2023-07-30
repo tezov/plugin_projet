@@ -81,7 +81,7 @@ open class ExtensionApp @Inject constructor(
     open class Lint {
         var abortOnError by PropertyDelegate { false }
         var checkReleaseBuilds by PropertyDelegate { false }
-        val disable = mutableListOf<String>()
+        var checkDependencies by PropertyDelegate { false }
     }
 
     internal val common = ExtensionCommon(project)

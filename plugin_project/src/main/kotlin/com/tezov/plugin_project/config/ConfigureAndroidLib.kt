@@ -42,7 +42,7 @@ internal class ConfigureAndroidLib(
             hasAssets = configExtensionLib.configuration.hasAssets
         )
         build()
-    }
+      }
 
     private fun defaultConfig() {
         androidExtension.defaultConfig {
