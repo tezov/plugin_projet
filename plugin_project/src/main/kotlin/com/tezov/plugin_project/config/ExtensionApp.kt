@@ -2,6 +2,7 @@ package com.tezov.plugin_project.config
 
 import com.android.build.api.dsl.ApplicationExtension
 import com.tezov.plugin_project.Logger.logError
+import com.tezov.plugin_project.Logger.logWarning
 import com.tezov.plugin_project.Logger.throwException
 import com.tezov.plugin_project.PropertyDelegate
 import com.tezov.plugin_project.config.ProjectConfigPlugin.Companion.ANDROID_EXTENSION_NAME
@@ -91,8 +92,15 @@ open class ExtensionApp @Inject constructor(
     internal val build = factory.newInstance(Build::class.java)
     val lint = factory.newInstance(Lint::class.java)
 
-    val applicationId get() = kotlin.runCatching { common.applicationId(this) }.getOrNull()
-    val packageName get() = kotlin.runCatching { common.packageName(this) }.getOrNull()
+    internal val nameSpace get() = kotlin.runCatching { common.nameSpace(this) }.getOrNull() ?: run {
+        project.throwException("nameSpace is not ready yet")
+    }
+    val applicationId get() = kotlin.runCatching { common.applicationId(this) }.getOrNull() ?: run {
+        project.throwException("applicationId is not ready yet")
+    }
+    val packageName get() = kotlin.runCatching { common.packageName(this) }.getOrNull() ?: run {
+        project.throwException("packageName is not ready yet")
+    }
 
     internal fun initCurrentBuildType(graphTasks: List<Task>) {
         build.currentType = common.findCurrentBuildType(graphTasks)

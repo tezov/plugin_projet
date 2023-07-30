@@ -413,10 +413,10 @@ dependencies {
 ```
 
 ## Catalog functions
-- string, stringList, int, javaVersion (+ OrNull version, and optional default value)
-- forEach and filter
-- "with" to scope yourself inside some json level
-- checkDependenciesVersion
+- **string**, **stringList**, **int**, **javaVersion** (+ **OrNull** version, and optional default value)
+- **forEach** and **filter**
+- **with** to scope yourself inside some json level****
+- **checkDependenciesVersion**
 
 ## Pro and Cons
 
@@ -430,6 +430,5 @@ con
 ## How to try the demo
 - Uncomment // include (":demo_app", ":demo_lib") in setting.gradle.kts
 - Comment includeBuild("plugin_project") in setting.gradle.kts
-- Uncomment classpath("com.tezov:plugin_project:1.0.0-8.0.2") in setting.gradle.kts
+- Uncomment classpath("com.tezov:plugin_project:1.0.1-8.0.2") in setting.gradle.kts
 - Uncomment all in build.gradle.kts of root project
-- 

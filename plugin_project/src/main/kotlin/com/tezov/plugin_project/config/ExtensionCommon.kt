@@ -8,6 +8,9 @@ internal class ExtensionCommon (
     private val project: Project
 ) {
 
+    fun nameSpace(configExtension: ExtensionApp) =
+        "${configExtension.configuration.domain}.${project.name}"
+
     fun applicationId(configExtension: ExtensionApp) =
         "${configExtension.configuration.domain}.${project.rootProject.name}"
 

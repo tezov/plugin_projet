@@ -1,13 +1,7 @@
 package com.tezov.plugin_project.config
 
-import com.android.build.api.dsl.AndroidSourceSet
 import com.android.build.api.dsl.ApplicationBuildType
 import com.android.build.api.dsl.ApplicationExtension
-import com.tezov.plugin_project.Logger.logInfo
-import com.tezov.plugin_project.Utils.normalizePath
-import com.tezov.plugin_project.config.ExtensionCommon.Companion.invoke
-import com.tezov.plugin_project.config.Proguard.PlaceHolder
-import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.Task
 import java.io.File
@@ -17,7 +11,7 @@ internal class ConfigureAndroidApp(
     val project: Project,
     val configExtension: ExtensionApp,
     private val androidExtension: ApplicationExtension,
-):ConfigureAndroidCommon.Protocol {
+) : ConfigureAndroidCommon.Protocol {
 
     val common = ConfigureAndroidCommon(project, this)
 
@@ -40,7 +34,7 @@ internal class ConfigureAndroidApp(
     }
 
     private fun configureAndroid() {
-        androidExtension.namespace = configExtension.applicationId
+        androidExtension.namespace = configExtension.nameSpace
         defaultConfig()
         common.sourceSet(
             sourceSets = androidExtension.sourceSets,
@@ -53,7 +47,7 @@ internal class ConfigureAndroidApp(
 
     private fun defaultConfig() {
         androidExtension.defaultConfig {
-            applicationId = androidExtension.namespace
+            applicationId = configExtension.applicationId
             versionName = configExtension.version.name
             versionCode = configExtension.version.value
             resourceConfigurations.addAll(configExtension.configuration.languages)
@@ -85,7 +79,11 @@ internal class ConfigureAndroidApp(
                     isMinifyEnabled = true
                     isShrinkResources = true
                 }
-                common.buildConfig(this, BuildConfig.DEBUG_ONLY, configExtension.release.enableDebug)
+                common.buildConfig(
+                    this,
+                    BuildConfig.DEBUG_ONLY,
+                    configExtension.release.enableDebug
+                )
             }
         }
     }

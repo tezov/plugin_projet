@@ -34,7 +34,7 @@ internal class ConfigureAndroidLib(
     }
 
     private fun configureAndroid() {
-        androidExtension.namespace = configExtensionApp.applicationId
+        androidExtension.namespace = configExtensionLib.nameSpace
         defaultConfig()
         common.sourceSet(
             sourceSets = androidExtension.sourceSets,

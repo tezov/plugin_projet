@@ -50,14 +50,20 @@ open class ExtensionLib @Inject constructor(
     internal val build = factory.newInstance(Build::class.java)
     val lint = factory.newInstance(Lint::class.java)
 
-    val applicationId:String? get() {
-        val configExtensionApp:ExtensionApp = findConfigExtensionApp()?: return null
-        return kotlin.runCatching { common.applicationId(configExtensionApp) }.getOrNull()
+    val nameSpace get() = findConfigExtensionApp()?.let {
+        kotlin.runCatching { common.nameSpace(it) }.getOrNull()
+    } ?: run {
+        project.throwException("nameSpace is not ready yet")
     }
-
-    val packageName:String? get() {
-        val configExtensionApp:ExtensionApp = findConfigExtensionApp()?: return null
-        return kotlin.runCatching { common.packageName(configExtensionApp) }.getOrNull()
+    val applicationId get() = findConfigExtensionApp()?.let {
+        kotlin.runCatching { common.applicationId(it) }.getOrNull()
+    } ?: run {
+        project.throwException("applicationId is not ready yet")
+    }
+    val packageName get() = findConfigExtensionApp()?.let {
+        kotlin.runCatching { common.packageName(it) }.getOrNull()
+    } ?: run {
+        project.throwException("packageName is not ready yet")
     }
 
     internal fun initCurrentBuildType(graphTasks: List<Task>) {
