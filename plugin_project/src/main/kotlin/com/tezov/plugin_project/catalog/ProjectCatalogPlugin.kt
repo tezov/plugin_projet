@@ -18,15 +18,14 @@ class ProjectCatalogPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         VersionCheck.gradle(project, CATALOG_PLUGIN_ID)
         project.takeIf { it === project.rootProject }?.let {
-            project.extensions.create(CATALOG_EXTENSION_NAME, CatalogRootExtension::class.java)
+            project.extensions.create(CATALOG_EXTENSION_NAME, CatalogProjectExtension::class.java)
             hasBeenApplyToRootProject.set(true)
         } ?: run {
             if (!hasBeenApplyToRootProject.get()) {
                 project.logError("$CATALOG_PLUGIN_ID has not been set to root project, plugin must be only apply at setup inside build.gradle.kts of ${project.rootProject.name}")
             }
-            project.extensions.create(CATALOG_EXTENSION_NAME, CatalogExtension::class.java)
+            project.extensions.create(CATALOG_EXTENSION_NAME, CatalogModuleExtension::class.java)
         }
     }
-
 
 }

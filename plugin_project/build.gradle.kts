@@ -1,11 +1,9 @@
 val domainName = "com.tezov"
-val tezovPluginVersion = "1.0.2"
-val androidPluginVersion = "8.0.2"
+val tezovPluginVersion = "1.0.0"
 val alphaVersion:Int? = null
 val domainVersion = StringBuilder().apply {
     append(tezovPluginVersion)
     append("-")
-    append(androidPluginVersion)
     alphaVersion?.let {
         append("-alpha.${alphaVersion}")
     }
@@ -46,18 +44,19 @@ gradlePlugin {
             id = name
             implementationClass = "${name}.ProjectCatalogPlugin"
             displayName = "Tezov plugin project - Catalog"
-            description = "user friendly tool to share catalog of constants and dependencies between project modules."
-            tags.set(listOf("android", "tezov", "catalog", "dependency", "dependencies"))
+            description = "shared catalog versions, dependencies and constants between project modules in json, yaml or toml format. Local or Remote file."
+            tags.set(listOf("android", "tezov", "catalog", "dependency", "dependencies", "version", "yaml", "toml", "json"))
         }
     }
 }
 
 dependencies {
     implementation(gradleApi())
-//    implementation(kotlin("stdlib"))
-    implementation("com.android.tools.build:gradle:${androidPluginVersion}")
+    implementation("com.android.tools.build:gradle:8.0.2")
     implementation("com.fasterxml.jackson.core:jackson-core:2.15.2")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.15.2")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.2")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-toml:2.15.2")
 }
 
 //val sourcesJar by tasks.registering(Jar::class) {

@@ -1,6 +1,6 @@
 rootProject.name = "plugin_project_demo"
 
-// include (":demo_app", ":demo_lib") // uncomment to try plugin project demo
+//include (":demo_app", ":demo_lib") // uncomment to try plugin project demo
 includeBuild("plugin_project") //comment to try plugin project demo
 
 pluginManagement {
@@ -17,7 +17,7 @@ pluginManagement {
 buildscript {
 
     dependencies {
-//        classpath("com.tezov:plugin_project:1.0.1-8.0.2") // uncomment to test plugin project demo
+//        classpath("com.tezov:plugin_project:1.0.2-8.0.2-alpha.1") // uncomment to test plugin project demo
         classpath("com.android.tools.build:gradle:8.0.2")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.22")
     }

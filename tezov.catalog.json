@@ -63,7 +63,7 @@
       }
     }
   },
-  "appPlugin": {
+  "plugin": {
     "android": "com.android",
     "application": "${android}.application",
     "library": "${android}.library",
@@ -71,13 +71,13 @@
     "tezov_project_config": "com.tezov.plugin_project.config"
   },
   "demo_app": [
-    "${appPlugin.application}",
-    "${appPlugin.kotlin}",
-    "${appPlugin.tezov_project_config}"
+    "${plugin.application}",
+    "${plugin.kotlin}",
+    "${plugin.tezov_project_config}"
   ],
   "demo_lib": [
-    "${appPlugin.library}",
-    "${appPlugin.kotlin}",
-    "${appPlugin.tezov_project_config}"
+    "${plugin.library}",
+    "${plugin.kotlin}",
+    "${plugin.tezov_project_config}"
   ]
 }
