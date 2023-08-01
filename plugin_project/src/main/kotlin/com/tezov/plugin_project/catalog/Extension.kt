@@ -5,10 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.tezov.plugin_project.Logger.logInfo
 import com.tezov.plugin_project.Logger.throwException
 import com.tezov.plugin_project.PropertyDelegate
-import com.tezov.plugin_project.catalog.CatalogScope.Companion.DEFAULT_INT
-import com.tezov.plugin_project.catalog.CatalogScope.Companion.DEFAULT_JAVA_VERSION
-import com.tezov.plugin_project.catalog.CatalogScope.Companion.DEFAULT_STRING
-import com.tezov.plugin_project.catalog.CatalogScope.Companion.DEFAULT_STRING_LIST
+import com.tezov.plugin_project.catalog.CatalogScope.Companion.DEFAULT_THROW
 import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_EXTENSION_NAME
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
@@ -24,16 +21,7 @@ open class CatalogScope(
 
     internal companion object {
 
-        val DEFAULT_STRING = { key: String ->
-            throw IndexOutOfBoundsException("key $key not found")
-        }
-        val DEFAULT_STRING_LIST = { key: String ->
-            throw IndexOutOfBoundsException("key $key not found")
-        }
-        val DEFAULT_INT = { key: String ->
-            throw IndexOutOfBoundsException("key $key not found")
-        }
-        val DEFAULT_JAVA_VERSION = { key: String ->
+        val DEFAULT_THROW = { key: String ->
             throw IndexOutOfBoundsException("key $key not found")
         }
 
@@ -133,18 +121,18 @@ open class CatalogScope(
     fun javaVersionOrNull(key: String) = delegate.javaVersionOrNull(key = key)
 
 
-    fun string(key: String = "", default: (key: String) -> String = DEFAULT_STRING) =
+    fun string(key: String = "", default: (key: String) -> String = DEFAULT_THROW) =
         delegate.string(key = key.absolute(), default = default)
 
-    fun stringList(key: String = "", default: (key: String) -> List<String> = DEFAULT_STRING_LIST) =
+    fun stringList(key: String = "", default: (key: String) -> List<String> = DEFAULT_THROW) =
         delegate.stringList(key = key.absolute(), default = default)
 
-    fun int(key: String = "", default: (key: String) -> Int = DEFAULT_INT) =
+    fun int(key: String = "", default: (key: String) -> Int = DEFAULT_THROW) =
         delegate.int(key = key.absolute(), default = default)
 
     fun javaVersion(
         key: String = "",
-        default: (key: String) -> JavaVersion = DEFAULT_JAVA_VERSION
+        default: (key: String) -> JavaVersion = DEFAULT_THROW
     ) = delegate.javaVersion(key = key.absolute(), default = default)
 
 
@@ -234,8 +222,7 @@ open class CatalogRootExtension @Inject constructor(
             }.getOrNull()?.delegate(this) ?: run {
                 project.throwException("catalog plugin not successfully apply to ${project.name}")
             }
-            stringList(key = module.name, default = { emptyList() })
-                .takeIf { it.isNotEmpty() }?.let { plugins ->
+            stringListOrNull(key = module.name)?.let { plugins ->
                     plugins.forEach { plugin ->
                         if (verbosePluginApply) project.logInfo("apply plugin : $plugin")
                         module.plugins.apply(plugin)
@@ -333,20 +320,20 @@ open class CatalogRootExtension @Inject constructor(
     }
 
 
-    fun string(key: String, default: (key: String) -> String = DEFAULT_STRING) =
+    fun string(key: String, default: (key: String) -> String = DEFAULT_THROW) =
         stringOrNull(key) ?: default(key)
 
     fun stringList(
         key: String,
-        default: (key: String) -> List<String> = DEFAULT_STRING_LIST
+        default: (key: String) -> List<String> = DEFAULT_THROW
     ) = stringListOrNull(key = key) ?: default(key)
 
-    fun int(key: String, default: (key: String) -> Int = DEFAULT_INT) =
+    fun int(key: String, default: (key: String) -> Int = DEFAULT_THROW) =
         intOrNull(key) ?: default(key)
 
     fun javaVersion(
         key: String,
-        default: (key: String) -> JavaVersion = DEFAULT_JAVA_VERSION
+        default: (key: String) -> JavaVersion = DEFAULT_THROW
     ): JavaVersion = javaVersionOrNull(key) ?: default(key)
 
 
@@ -387,18 +374,18 @@ open class CatalogExtension {
     fun javaVersionOrNull(key: String) = delegate.javaVersionOrNull(key = key)
 
 
-    fun string(key: String, default: (key: String) -> String = DEFAULT_STRING) =
+    fun string(key: String, default: (key: String) -> String = DEFAULT_THROW) =
         delegate.string(key = key, default = default)
 
-    fun stringList(key: String, default: (key: String) -> List<String> = DEFAULT_STRING_LIST) =
+    fun stringList(key: String, default: (key: String) -> List<String> = DEFAULT_THROW) =
         delegate.stringList(key = key, default = default)
 
-    fun int(key: String, default: (key: String) -> Int = DEFAULT_INT) = delegate.int(
+    fun int(key: String, default: (key: String) -> Int = DEFAULT_THROW) = delegate.int(
         key = key,
         default = default
     )
 
-    fun javaVersion(key: String, default: (key: String) -> JavaVersion = DEFAULT_JAVA_VERSION) =
+    fun javaVersion(key: String, default: (key: String) -> JavaVersion = DEFAULT_THROW) =
         delegate.javaVersion(key = key, default = default)
 
 
