@@ -3,7 +3,6 @@ val tezovPluginVersion = "1.0.0"
 val alphaVersion:Int? = null
 val domainVersion = StringBuilder().apply {
     append(tezovPluginVersion)
-    append("-")
     alphaVersion?.let {
         append("-alpha.${alphaVersion}")
     }
