@@ -138,7 +138,7 @@ tezovConfig {
 }
 ```
 
-** You can check to demo project sources juste in this repo **
+**You can check to demo project sources juste in this repo**
 
 ## How to install -Catalog- plugin
 - add classpath and repositories to settings.gradle.kts
@@ -213,7 +213,7 @@ tezovCatalog {
   - If a property name is equal to module name, an array of plugins is expected. All plugin will be auto apply and also the catalog plugin to each modules
     - plugin version come from from the version you used in classpath setting
 
-** Catalog example:  tezov.catalog.json / tezov.catalog.yaml tezov.catalog.toml in this repo ** 
+**Catalog example:  tezov.catalog.json / tezov.catalog.yaml tezov.catalog.toml in this repo** 
 
 - Then in build.gradle.kts of each module that have been defined in the json, you can use the catalog plugin
 
