@@ -214,9 +214,9 @@ tezovCatalog {
     - plugin version come from from the version you used in classpath setting
 
 Catalog example:
-- tezov.catalog.json
-- tezov.catalog.yaml
-- tezov.catalog.toml
+  - tezov.catalog.json
+  - tezov.catalog.yaml
+  - tezov.catalog.toml
 
 - Then in build.gradle.kts of each module that have been defined in the json, you can use the catalog plugin
 
