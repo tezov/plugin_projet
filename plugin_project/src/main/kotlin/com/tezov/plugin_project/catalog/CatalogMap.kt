@@ -1,6 +1,5 @@
 package com.tezov.plugin_project.catalog
 
-import com.tezov.plugin_project.Logger.logInfo
 import com.tezov.plugin_project.Logger.throwException
 import org.gradle.api.JavaVersion
 
@@ -24,13 +23,13 @@ internal class CatalogMap(
     init {
         rawCatalog.forEach {
             val value = if (it.value.contains(PLACE_HOLDER_START)) {
-                stringPlaceHolderReplaceRecurse(it.key, rawCatalog)!!
+                stringPlaceHolderRecurseReplace(it.key, rawCatalog)!!
             } else it.value
             this@CatalogMap.catalog[it.key] = value
         }
     }
 
-    private fun stringPlaceHolderReplaceRecurse(
+    private fun stringPlaceHolderRecurseReplace(
         key: String,
         catalog: Map<String, String>
     ): String? {
@@ -54,7 +53,7 @@ internal class CatalogMap(
                         append(placeHolderKey)
                     }.toString()
                     placeHolderValue =
-                        stringPlaceHolderReplaceRecurse(
+                        stringPlaceHolderRecurseReplace(
                             key = placeHolderKeyRebuilt,
                             catalog = catalog
                         )

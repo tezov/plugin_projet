@@ -6,11 +6,6 @@
 //
 //tezovCatalog {
 //
-//    verboseCatalogBuild = true
-//    verbosePluginApply = true
-////    verboseReadValue = true
-////    verboseCheckDependenciesVersion = true
-//
 //    catalogFile = catalogFromFile("F:/android_project/plugin_project_demo/tezov.catalog.json")
 ////    catalogFile = catalogFromFile("F:/android_project/plugin_project_demo/tezov.catalog.yaml")
 ////    catalogFile = catalogFromFile("F:/android_project/plugin_project_demo/tezov.catalog.toml")
