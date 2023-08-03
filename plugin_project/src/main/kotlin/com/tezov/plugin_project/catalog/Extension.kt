@@ -35,9 +35,9 @@ open class CatalogScope internal constructor(
         replaceFirst(keyBase, "").dropWhile { it == '.' }
     } else ""
 
-    fun with(key: String, block: CatalogScope.() -> Unit) = CatalogScope(
+    fun with(key: String, isKeyAbsolute:Boolean = false, block: CatalogScope.() -> Unit) = CatalogScope(
         project = project,
-        keyBase = key,
+        keyBase = if(isKeyAbsolute) key else key.absolute(),
     ).also { it.catalog = catalog }.block()
 
     fun filter(predicate: (key: String) -> Boolean) = catalog.filter {
@@ -79,6 +79,7 @@ open class CatalogScope internal constructor(
         default: (key: String) -> JavaVersion = DEFAULT_THROW
     ) = catalog.javaVersion(key = key.absolute(), default = default)
 
+
     inline val String.stringOrNull get() = stringOrNull(key = this)
     inline val String.stringListOrNull get() = stringListOrNull(key = this)
     inline val String.intOrNull get() = intOrNull(key = this)
@@ -104,15 +105,7 @@ open class CatalogProjectExtension @Inject constructor(
         Json("json"), Yaml("yaml"), Toml("toml");
 
         companion object {
-            inline val String.extension
-                get(): String? {
-                    val dotIndex = lastIndexOf('.')
-                    return if (dotIndex > 0 && dotIndex < length - 1) {
-                        substring(dotIndex + 1)
-                    } else {
-                        null
-                    }
-                }
+            inline val String.extension get() = substringAfterLast('.')
 
             inline val String.format
                 get() = extension?.lowercase()?.let { extension ->
