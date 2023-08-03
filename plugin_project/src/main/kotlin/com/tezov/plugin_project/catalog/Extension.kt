@@ -184,13 +184,18 @@ open class CatalogProjectExtension @Inject constructor(
         }
         if (verboseCatalogBuild) {
             catalog.forEach { key, value ->
-                project.logInfo("$key :: $value")
+                project.logInfo("$key = $value")
             }
         }
     }
 
     private fun applyProjectsPlugin() {
-        if (verbosePluginApply) project.logInfo("Project : ${project.name}")
+        val verboseReadValueSave = verboseReadValue
+        if (verbosePluginApply) {
+            project.logInfo("Project : ${project.name}")
+        } else {
+            verboseReadValue = false
+        }
         project.allprojects.filter { it !== project }.forEach { module ->
             if (verbosePluginApply) project.logInfo("Module : ${module.name}")
             if (verbosePluginApply) project.logInfo("apply plugin : ${ProjectCatalogPlugin.CATALOG_PLUGIN_ID}")
@@ -212,6 +217,7 @@ open class CatalogProjectExtension @Inject constructor(
                 if (verbosePluginApply) project.logInfo("!!! Warning... no plugins found in catalog")
             }
         }
+        verboseReadValue = verboseReadValueSave
     }
 
     fun checkDependenciesVersion(

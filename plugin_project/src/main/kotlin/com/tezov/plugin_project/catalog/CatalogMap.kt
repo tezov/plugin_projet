@@ -29,9 +29,9 @@ internal class CatalogMap(
                 if (verboseReadValue) project.logInfo("value not found for key: $key")
                 return null
             }
-            if (verboseReadValue) project.logInfo("key: $key | value: $value")
+            if (verboseReadValue) project.logInfo("key: $key = $value")
             if (!value.contains('$')) return value
-            if (verboseReadValue) project.logInfo("key: $key | value contains placeholder, start replacement...")
+            if (verboseReadValue) project.logInfo("key: $key > value contains placeholder, start replacement...")
             val regexValue = Regex("""(\$\{(.*?)\})""")
             val valueBuilder = StringBuilder(value)
             var indexOffset = 0
@@ -65,7 +65,7 @@ internal class CatalogMap(
                 }
             }
             if (verboseReadValue) project.logInfo(
-                "... end replacement -> key: $key | value: $valueBuilder"
+                "... end replacement -> key: $key = $valueBuilder"
             )
             return valueBuilder.toString()
         }
