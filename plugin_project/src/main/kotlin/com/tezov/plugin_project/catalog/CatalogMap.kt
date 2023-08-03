@@ -6,7 +6,7 @@ import org.gradle.api.JavaVersion
 
 internal class CatalogMap(
     private val extension: CatalogProjectExtension,
-    private val rawCatalog: Map<String, String>
+    rawCatalog: Map<String, String>
 ) {
 
     companion object {
@@ -19,29 +19,24 @@ internal class CatalogMap(
         }
     }
 
-    private val catalog: Map<String, String>
+    private val catalog: MutableMap<String, String> = mutableMapOf()
 
     init {
-        catalog = rawCatalog
+        rawCatalog.forEach {
+            val value = if (it.value.contains(PLACE_HOLDER_START)) {
+                stringPlaceHolderReplaceRecurse(it.key, rawCatalog)!!
+            } else it.value
+            this@CatalogMap.catalog[it.key] = value
+        }
     }
 
-    fun filter(
-        predicate: (key: String) -> Boolean
-    ) = catalog.filter { predicate(it.key) }
-
-    fun forEach(block: (key: String, value: String) -> Unit) = catalog.forEach {
-        block(it.key, it.value)
-    }
-
-    fun stringOrNull(key: String): String? {
+    private fun stringPlaceHolderReplaceRecurse(
+        key: String,
+        catalog: Map<String, String>
+    ): String? {
         with(extension) {
-            val value = this@CatalogMap.catalog[key] ?: run {
-                if (verboseReadValue) project.logInfo("value not found for key: $key")
-                return null
-            }
-            if (verboseReadValue) project.logInfo("key: $key = $value")
+            val value = catalog[key] ?: return null
             if (!value.contains(PLACE_HOLDER_START)) return value
-            if (verboseReadValue) project.logInfo("key: $key > value contains placeholder, start replacement...")
             val valueBuilder = StringBuilder(value)
             var indexOffset = 0
             //multiple placeholder can be in value
@@ -58,9 +53,11 @@ internal class CatalogMap(
                         if (isNotEmpty()) append(KEY_SEPARATOR)
                         append(placeHolderKey)
                     }.toString()
-                    if (verboseReadValue) project.logInfo("try to retrieve place holder value with key: $placeHolderKey")
                     placeHolderValue =
-                        stringOrNull(placeHolderKeyRebuilt) //placeholder value recurse replace
+                        stringPlaceHolderReplaceRecurse(
+                            key = placeHolderKeyRebuilt,
+                            catalog = catalog
+                        )
                     if (placeHolderValue != null) break
                 } while (keys.isNotEmpty())
                 placeHolderValue ?: kotlin.run {
@@ -76,19 +73,26 @@ internal class CatalogMap(
                     indexOffset += (placeHolderValue.length - it.count())
                 }
             }
-            if (verboseReadValue) project.logInfo(
-                "... end replacement -> key: $key = $valueBuilder"
-            )
             return valueBuilder.toString()
         }
     }
 
-    fun stringListOrNull(key: String): List<String>? =
+    val keys get() = catalog.keys
+
+    val values get() = catalog.values
+
+    fun filter(
+        predicate: (key: String) -> Boolean
+    ) = catalog.filter { predicate(it.key) }
+
+    fun stringOrNull(key: String) = catalog[key]
+
+    fun stringListOrNull(key: String) =
         stringOrNull(key = key)?.split(ARRAY_SEPARATOR)
 
-    fun intOrNull(key: String): Int? = stringOrNull(key = key)?.toIntOrNull()
+    fun intOrNull(key: String) = stringOrNull(key = key)?.toIntOrNull()
 
-    fun javaVersionOrNull(key: String): JavaVersion? = stringOrNull(key = key)?.let { value ->
+    fun javaVersionOrNull(key: String) = stringOrNull(key = key)?.let { value ->
         JavaVersion.values().find { it.name == value }
     }
 

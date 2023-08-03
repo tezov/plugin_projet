@@ -41,6 +41,10 @@ open class CatalogScope internal constructor(
         keyBase = if(isKeyAbsolute) key else key.absolute(),
     ).also { it.catalog = catalog }.block()
 
+    val keys get() = catalog.keys
+
+    val values get() = catalog.values
+
     fun filter(predicate: (key: String) -> Boolean) = catalog.filter {
         it.isValid() && predicate(it.relative())
     }.mapKeys {
@@ -113,11 +117,6 @@ open class CatalogProjectExtension @Inject constructor(
         }
     }
 
-    var verboseCatalogBuild by PropertyDelegate { false }
-    var verbosePluginApply by PropertyDelegate { false }
-    var verboseReadValue by PropertyDelegate { false }
-    var verboseCheckDependenciesVersion by PropertyDelegate { false }
-
     var catalogFile by PropertyDelegate<CatalogFile?> { null }
     var catalogType by PropertyDelegate<FileFormat?> { null }
 
@@ -131,7 +130,6 @@ open class CatalogProjectExtension @Inject constructor(
                 if (!it.exists() || !it.isFile) {
                     project.throwException("catalog file not found")
                 }
-                if (verboseCatalogBuild) project.logInfo("retrieve catalog from file $path -> format is ${this.format}")
             }.readText()
     }
 
@@ -141,17 +139,13 @@ open class CatalogProjectExtension @Inject constructor(
             ?: project.throwException("Couldn't resolve file format $href")
 
         override val data: String
-            get() = URL(href).also {
-                if (verboseCatalogBuild) project.logInfo("retrieve json catalog from url $href -> format is ${this.format}")
-            }.readText()
+            get() = URL(href).readText()
     }
 
     fun catalogFromString(data: String, format: FileFormat) = object : CatalogFile {
         override val format: FileFormat get() = format
         override val data: String
-            get() = data.also {
-                if (verboseCatalogBuild) project.logInfo("retrieve json catalog from string -> format is ${this.format}")
-            }
+            get() = data
     }
 
     fun configureProjects() {
@@ -163,7 +157,6 @@ open class CatalogProjectExtension @Inject constructor(
         val uri = catalogFile ?: run {
             project.throwException("catalog path is null")
         }
-        if (verboseCatalogBuild) project.logInfo("Read catalog")
         catalog = when (uri.format) {
             FileFormat.Json -> CatalogBuilder.json(
                 extension = this,
@@ -178,23 +171,10 @@ open class CatalogProjectExtension @Inject constructor(
                 uri = uri
             )
         }
-        if (verboseCatalogBuild) {
-            catalog.forEach { key, value ->
-                project.logInfo("$key = $value")
-            }
-        }
     }
 
     private fun applyProjectsPlugin() {
-        val verboseReadValueSave = verboseReadValue
-        if (verbosePluginApply) {
-            project.logInfo("Project : ${project.name}")
-        } else {
-            verboseReadValue = false
-        }
         project.allprojects.filter { it !== project }.forEach { module ->
-            if (verbosePluginApply) project.logInfo("Module : ${module.name}")
-            if (verbosePluginApply) project.logInfo("apply plugin : ${ProjectCatalogPlugin.CATALOG_PLUGIN_ID}")
             module.plugins.apply(ProjectCatalogPlugin.CATALOG_PLUGIN_ID)
             kotlin.runCatching {
                 module.extensions.findByName(CATALOG_EXTENSION_NAME) as? CatalogModuleExtension
@@ -205,15 +185,10 @@ open class CatalogProjectExtension @Inject constructor(
             }
             stringListOrNull(key = module.name)?.let { plugins ->
                 plugins.forEach { plugin ->
-                    if (verbosePluginApply) project.logInfo("apply plugin : $plugin")
                     module.plugins.apply(plugin)
                 }
-                if (verbosePluginApply) project.logInfo("** success **")
-            } ?: run {
-                if (verbosePluginApply) project.logInfo("!!! Warning... no plugins found in catalog")
             }
         }
-        verboseReadValue = verboseReadValueSave
     }
 
     fun checkDependenciesVersion(
@@ -224,16 +199,9 @@ open class CatalogProjectExtension @Inject constructor(
         forEach { key, _ ->
             val dependencyFullName = string(key).lowercase()
             val indexOfVersionSeparator = dependencyFullName.lastIndexOf(':')
-            if (indexOfVersionSeparator == -1) {
-                if (verboseCheckDependenciesVersion) {
-                    project.logInfo("${key.absolute()}: version invalid $dependencyFullName")
-                }
-            } else {
+            if (indexOfVersionSeparator != -1) {
                 val dependencyName = dependencyFullName.substring(0, indexOfVersionSeparator)
                 val dependencyVersion = dependencyFullName.substring(indexOfVersionSeparator + 1)
-                if (verboseCheckDependenciesVersion) {
-                    project.logInfo("${key.absolute()}:$dependencyFullName check")
-                }
                 kotlin.runCatching {
                     val resolvedVersions = project.configurations.detachedConfiguration(
                         project.dependencies.create("$dependencyName:+")
@@ -255,17 +223,6 @@ open class CatalogProjectExtension @Inject constructor(
                         if (it != dependencyVersion) {
                             project.logInfo("${key.absolute()}: can be updated from $dependencyVersion to $it")
                         }
-                    } ?: run {
-                        if (verboseCheckDependenciesVersion) {
-                            project.logInfo("${key.absolute()}: $dependencyName latest version not found in")
-                            resolvedVersions.forEach {
-                                project.logInfo(">> ${it.id.displayName}")
-                            }
-                        }
-                    }
-                }.onFailure {
-                    if (verboseCheckDependenciesVersion) {
-                        project.logInfo("${key.absolute()}:$dependencyFullName failed to retrieve latest version")
                     }
                 }
             }
