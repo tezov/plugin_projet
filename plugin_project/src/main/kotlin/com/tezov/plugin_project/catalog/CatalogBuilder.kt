@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.toml.TomlFactory
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import com.tezov.plugin_project.catalog.CatalogMap.Companion.ARRAY_SEPARATOR
 
 internal object CatalogBuilder {
 
@@ -17,7 +18,7 @@ internal object CatalogBuilder {
             when (value) {
                 is Map<*, *> -> (value as Map<String, Any>).flattenMap(outputMap, newKey)
                 is List<*> -> outputMap[newKey] =
-                    value.joinToString(",") { it.toString().trim() }
+                    value.joinToString(ARRAY_SEPARATOR.toString()) { it.toString().trim() }
 
                 is Number -> outputMap[newKey] = value.toString()
                 else -> outputMap[newKey] = value.toString().trim()

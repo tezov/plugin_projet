@@ -10,48 +10,60 @@ internal class CatalogMap(
 ) {
 
     companion object {
+        const val PLACE_HOLDER_START = '$'
+        val PLACE_HOLDER_REGEX = Regex("""(\$\{(.*?)\})""")
+        const val KEY_SEPARATOR = '.'
+        const val ARRAY_SEPARATOR = ','
         val DEFAULT_THROW = { key: String ->
             throw IndexOutOfBoundsException("key $key not found")
         }
     }
 
+    private val catalog: Map<String, String>
+
+    init {
+        catalog = rawCatalog
+    }
+
     fun filter(
         predicate: (key: String) -> Boolean
-    ) = rawCatalog.filter { predicate(it.key) }
+    ) = catalog.filter { predicate(it.key) }
 
-    fun forEach(block: (key: String, value: String) -> Unit) = rawCatalog.forEach {
+    fun forEach(block: (key: String, value: String) -> Unit) = catalog.forEach {
         block(it.key, it.value)
     }
 
     fun stringOrNull(key: String): String? {
         with(extension) {
-            val value = rawCatalog[key] ?: run {
+            val value = this@CatalogMap.catalog[key] ?: run {
                 if (verboseReadValue) project.logInfo("value not found for key: $key")
                 return null
             }
             if (verboseReadValue) project.logInfo("key: $key = $value")
-            if (!value.contains('$')) return value
+            if (!value.contains(PLACE_HOLDER_START)) return value
             if (verboseReadValue) project.logInfo("key: $key > value contains placeholder, start replacement...")
-            val regexValue = Regex("""(\$\{(.*?)\})""")
             val valueBuilder = StringBuilder(value)
             var indexOffset = 0
-            for (it in regexValue.findAll(value)) {
+            //multiple placeholder can be in value
+            for (it in PLACE_HOLDER_REGEX.findAll(value)) {
                 if (it.groups.size < 3) continue
-                //rebuild absolute place holder key
-                val placeHolderKeyEnd = it.groups[2]?.value ?: continue
-                val placeHolderKeyEndDotCount = placeHolderKeyEnd.count { it == '.' } + 1
-                val placeHolderKeyStart = key.split('.').let {
-                    it.subList(0, (it.size - placeHolderKeyEndDotCount).coerceAtLeast(0))
-                        .joinToString(".")
-                }
-                val placeHolderKey = if (placeHolderKeyStart.isNotBlank()) {
-                    "$placeHolderKeyStart.$placeHolderKeyEnd"
-                } else {
-                    placeHolderKeyEnd
-                }
-                if (verboseReadValue) project.logInfo("absolute placeHolderKey : $placeHolderKey")
-                //recurse retrieve placeholder holder value
-                val placeHolderValue = stringOrNull(placeHolderKey) ?: kotlin.run {
+                //find first valid placeholder value from inside to outside
+                val placeHolderKey = it.groups[2]?.value ?: continue
+                val keys = key.split(KEY_SEPARATOR).toMutableList()
+                var placeHolderValue: String?
+                do {
+                    keys.removeLast()
+                    val placeHolderKeyRebuilt = StringBuilder().apply {
+                        append(keys.joinToString(KEY_SEPARATOR.toString()))
+                        if (isNotEmpty()) append(KEY_SEPARATOR)
+                        append(placeHolderKey)
+                    }.toString()
+                    if (verboseReadValue) project.logInfo("try to retrieve place holder value with key: $placeHolderKey")
+                    placeHolderValue =
+                        stringOrNull(placeHolderKeyRebuilt) //placeholder value recurse replace
+                    if (placeHolderValue != null) break
+                } while (keys.isNotEmpty())
+                placeHolderValue ?: kotlin.run {
                     project.throwException("placeholder key $placeHolderKey not found for key $key with value $value")
                 }
                 //replace placeholder by placeholder value in value
@@ -71,7 +83,8 @@ internal class CatalogMap(
         }
     }
 
-    fun stringListOrNull(key: String): List<String>? = stringOrNull(key = key)?.split(",")
+    fun stringListOrNull(key: String): List<String>? =
+        stringOrNull(key = key)?.split(ARRAY_SEPARATOR)
 
     fun intOrNull(key: String): Int? = stringOrNull(key = key)?.toIntOrNull()
 

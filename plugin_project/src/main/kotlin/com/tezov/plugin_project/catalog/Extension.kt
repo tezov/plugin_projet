@@ -4,6 +4,7 @@ import com.tezov.plugin_project.Logger.logInfo
 import com.tezov.plugin_project.Logger.throwException
 import com.tezov.plugin_project.PropertyDelegate
 import com.tezov.plugin_project.catalog.CatalogMap.Companion.DEFAULT_THROW
+import com.tezov.plugin_project.catalog.CatalogMap.Companion.KEY_SEPARATOR
 import com.tezov.plugin_project.catalog.CatalogProjectExtension.FileFormat.Companion.format
 import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_EXTENSION_NAME
 import org.gradle.api.JavaVersion
@@ -22,7 +23,7 @@ open class CatalogScope internal constructor(
 
     private fun String.isValid() = when {
         keyBase.isBlank() -> true
-        else -> startsWith(keyBase) && getOrNull(keyBase.length).let { it == null || it == '.' }
+        else -> startsWith(keyBase) && getOrNull(keyBase.length).let { it == null || it == KEY_SEPARATOR }
     }
 
     internal fun String.absolute() = when {
@@ -32,7 +33,7 @@ open class CatalogScope internal constructor(
     }
 
     private fun String.relative() = if (isNotBlank()) {
-        replaceFirst(keyBase, "").dropWhile { it == '.' }
+        replaceFirst(keyBase, "").dropWhile { it == KEY_SEPARATOR }
     } else ""
 
     fun with(key: String, isKeyAbsolute:Boolean = false, block: CatalogScope.() -> Unit) = CatalogScope(
@@ -108,13 +109,8 @@ open class CatalogProjectExtension @Inject constructor(
             inline val String.extension get() = substringAfterLast('.')
 
             inline val String.format
-                get() = extension?.lowercase()?.let { extension ->
-                    FileFormat.values().find { it.extension == extension }
-                }
-
+                get() = FileFormat.values().find { it.extension == extension }
         }
-
-
     }
 
     var verboseCatalogBuild by PropertyDelegate { false }
