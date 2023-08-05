@@ -1,6 +1,9 @@
 # Tezov plugin project
 
 ## What's New
+- 03/08/2023 - 1.0.2
+  - add Path and URL type accepted for catalog
+  - better error message when missing config plugin on app module
 - 03/08/2023 - 1.0.1 
   - catalog cached with placeholder already replaced
   - rebuild placeholder key from inner to outer levels
@@ -61,7 +64,7 @@ plugins {
 
 ```
 tezovCatalog {
-    catalogFile = catalogFromFile("F:/android_project/tezov_banque/tezov_bank.catalog.yaml")
+    catalogFile = catalogFromFile("${project.projectDir}", "/tezov_bank.catalog.yaml")
     or catalogFile = catalogFromUrl("https://www.tezov.com/tezov_bank.catalog.json")
     or catalogFile = catalogFromString("{** json catalog string here  **}")
 
@@ -83,7 +86,7 @@ tezovCatalog {
 }
 ```
 
-**Catalog example:  tezov.catalog.json / tezov.catalog.yaml tezov.catalog.toml in this repo**
+**Catalog example** in this repo:  tezov.catalog.json / tezov.catalog.yaml / tezov.catalog.toml
 
 - Then in build.gradle.kts of each module that have been defined in the json, you can use the catalog plugin
 
