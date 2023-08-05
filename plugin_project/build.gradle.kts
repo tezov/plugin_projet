@@ -1,3 +1,5 @@
+import kotlin.io.path.Path
+
 val domainName = "com.tezov"
 val tezovPluginVersion = "1.0.1"
 val alphaVersion:Int? = null
@@ -68,7 +70,7 @@ afterEvaluate {
         repositories {
             maven {
                 name = "localRepository"
-                url = uri(file("F:\\android_project\\repository\\").path)
+                url = uri(Path("${project.projectDir}", "/repository/").toString())
             }
         }
 //        publications {
