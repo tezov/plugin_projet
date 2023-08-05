@@ -12,6 +12,7 @@ import org.gradle.api.Project
 import java.io.File
 import java.net.URL
 import javax.inject.Inject
+import java.nio.file.Path
 
 
 open class CatalogScope internal constructor(
@@ -120,26 +121,34 @@ open class CatalogProjectExtension @Inject constructor(
     var catalogFile by PropertyDelegate<CatalogFile?> { null }
     var catalogType by PropertyDelegate<FileFormat?> { null }
 
-    fun catalogFromFile(path: String, format: FileFormat? = null) = object : CatalogFile {
+    fun catalogFromFile(path: String, format: FileFormat? = null) = catalogFromFile(
+        path = Path.of(path),
+        format = format,
+    )
+    fun catalogFromFile(path: Path, format: FileFormat? = null) = object : CatalogFile {
         override val format: FileFormat
-            get() = format ?: path.format
+            get() = format ?: path.toString().format
             ?: project.throwException("Couldn't resolve file format $path")
 
         override val data: String
-            get() = File(path).also {
+            get() = path.toFile().also {
                 if (!it.exists() || !it.isFile) {
                     project.throwException("catalog file not found")
                 }
             }.readText()
     }
 
-    fun catalogFromUrl(href: String, format: FileFormat? = null) = object : CatalogFile {
+    fun catalogFromUrl(href: String, format: FileFormat? = null) = catalogFromUrl(
+        href = URL(href),
+        format = format,
+    )
+    fun catalogFromUrl(href: URL, format: FileFormat? = null) = object : CatalogFile {
         override val format: FileFormat
-            get() = format ?: href.format
+            get() = format ?: href.path.format
             ?: project.throwException("Couldn't resolve file format $href")
 
         override val data: String
-            get() = URL(href).readText()
+            get() = href.readText()
     }
 
     fun catalogFromString(data: String, format: FileFormat) = object : CatalogFile {

@@ -8,9 +8,9 @@
 //
 //tezovCatalog {
 //
-//    catalogFile = catalogFromUrl(Path("${project.projectDir}", "/tezov.catalog.yaml").toString())
-//    catalogFile = catalogFromUrl(Path("${project.projectDir}", "/tezov.catalog.json").toString())
-//    catalogFile = catalogFromUrl(Path("${project.projectDir}", "/tezov.catalog.toml").toString())
+//    catalogFile = catalogFromUrl("${project.projectDir}/tezov.catalog.yaml")
+//    catalogFile = catalogFromUrl("${project.projectDir}/tezov.catalog.json")
+//    catalogFile = catalogFromUrl("${project.projectDir}/tezov.catalog.toml")
 
 ////    catalogFile = catalogFromUrl("https://www.tezov.com/tezov.catalog.json")
 
