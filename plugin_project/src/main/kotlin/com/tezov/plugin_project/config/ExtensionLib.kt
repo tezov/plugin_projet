@@ -92,7 +92,7 @@ open class ExtensionLib @Inject constructor(
             project.throwException("Android plugin library not found")
         }
         val configExtensionApp = findConfigExtensionApp()?: kotlin.run {
-            project.throwException("Tezov plugin config application not found in all projects")
+            project.throwException("The tezov plugin config must be applied to the app module. Else you can not use it on the lib modules.")
         }
         ConfigureAndroidLib(
             project = project,

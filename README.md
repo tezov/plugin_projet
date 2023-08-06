@@ -19,7 +19,8 @@ shared version, dependencies and constants between modules
   - check dependencies latest version
   - accepted catalog format Json, Yaml and Toml
 
-Min gradle version : 8.0
+Min gradle version : 8.0 :
+[Catalog plugin on Gradle portal](https://plugins.gradle.org/plugin/com.tezov.plugin_project.catalog)
 
 **Plugin Config**
 auto configuration multi module application and proguard debug tool
@@ -29,7 +30,8 @@ auto configuration multi module application and proguard debug tool
 - user friendly setup with build type available
 - sourceSet config
 
-Min gradle version : 8.0 and Min Android plugin version 8.0.2
+Min gradle version : 8.0 and Min Android plugin version 8.0.2 :
+[Config plugin on Gradle portal](https://plugins.gradle.org/plugin/com.tezov.plugin_project.config)
 
 ## How to install -Catalog- plugin
 - add classpath and repositories to settings.gradle.kts
@@ -65,7 +67,7 @@ plugins {
 
 ```
 tezovCatalog {
-    catalogFile = catalogFromFile("F:/android_project/tezov_banque/tezov_bank.catalog.yaml")
+    catalogFile = catalogFromFile("${project.projectDir}", "/tezov_bank.catalog.yaml")
     or catalogFile = catalogFromUrl("https://www.tezov.com/tezov_bank.catalog.json")
     or catalogFile = catalogFromString("{** json catalog string here  **}")
 
@@ -87,7 +89,7 @@ tezovCatalog {
 }
 ```
 
-**Catalog example:  tezov.catalog.json / tezov.catalog.yaml tezov.catalog.toml in this repo**
+**Catalog example** in this repo:  tezov.catalog.json / tezov.catalog.yaml / tezov.catalog.toml
 
 - Then in build.gradle.kts of each module that have been defined in the json, you can use the catalog plugin
 

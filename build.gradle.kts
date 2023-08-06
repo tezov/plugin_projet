@@ -6,11 +6,12 @@
 //
 //tezovCatalog {
 //
-//    catalogFile = catalogFromFile("F:/android_project/plugin_project_demo/tezov.catalog.json")
-////    catalogFile = catalogFromFile("F:/android_project/plugin_project_demo/tezov.catalog.yaml")
-////    catalogFile = catalogFromFile("F:/android_project/plugin_project_demo/tezov.catalog.toml")
-//
+//    catalogFile = catalogFromUrl("${project.projectDir}/tezov.catalog.yaml")
+//    catalogFile = catalogFromUrl("${project.projectDir}/tezov.catalog.json")
+//    catalogFile = catalogFromUrl("${project.projectDir}/tezov.catalog.toml")
+
 ////    catalogFile = catalogFromUrl("https://www.tezov.com/tezov.catalog.json")
+
 //
 //    configureProjects()
 //

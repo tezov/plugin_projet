@@ -12,6 +12,7 @@ import org.gradle.api.Project
 import java.io.File
 import java.net.URL
 import javax.inject.Inject
+import java.nio.file.Path
 
 
 open class CatalogScope internal constructor(
@@ -95,6 +96,44 @@ open class CatalogScope internal constructor(
     inline val String.int get() = int(key = this)
     inline val String.javaVersion get() = javaVersion(key = this)
 
+    fun checkDependenciesVersion(
+        ignore_alpha: Boolean = false,
+        ignore_beta: Boolean = false,
+        ignore_rc: Boolean = false
+    ) {
+        forEach { key, _ ->
+            val dependencyFullName = string(key).lowercase()
+            val indexOfVersionSeparator = dependencyFullName.lastIndexOf(':')
+            if (indexOfVersionSeparator != -1) {
+                val dependencyName = dependencyFullName.substring(0, indexOfVersionSeparator)
+                val dependencyVersion = dependencyFullName.substring(indexOfVersionSeparator + 1)
+                kotlin.runCatching {
+                    val resolvedVersions = project.configurations.detachedConfiguration(
+                        project.dependencies.create("$dependencyName:+")
+                    ).resolvedConfiguration.resolvedArtifacts
+                    resolvedVersions.filter {
+                        val displayName = it.id.componentIdentifier.displayName.lowercase()
+                        val version = it.moduleVersion.id.version.lowercase()
+                        displayName.startsWith(dependencyName)
+                                && (!ignore_alpha || dependencyVersion.contains("alpha") || !version.contains(
+                            "alpha"
+                        ))
+                                && (!ignore_beta || dependencyVersion.contains("beta") || !version.contains(
+                            "beta"
+                        ))
+                                && (!ignore_rc || dependencyVersion.contains("rc") || !version.contains(
+                            "rc"
+                        ))
+                    }.map { it.moduleVersion.id.version.lowercase() }.maxByOrNull { it }?.let {
+                        if (it != dependencyVersion) {
+                            project.logInfo("${key.absolute()}: can be updated from $dependencyVersion to $it")
+                        }
+                    }
+                }
+            }
+
+        }
+    }
 }
 
 open class CatalogProjectExtension @Inject constructor(
@@ -120,26 +159,34 @@ open class CatalogProjectExtension @Inject constructor(
     var catalogFile by PropertyDelegate<CatalogFile?> { null }
     var catalogType by PropertyDelegate<FileFormat?> { null }
 
-    fun catalogFromFile(path: String, format: FileFormat? = null) = object : CatalogFile {
+    fun catalogFromFile(path: String, format: FileFormat? = null) = catalogFromFile(
+        path = Path.of(path),
+        format = format,
+    )
+    fun catalogFromFile(path: Path, format: FileFormat? = null) = object : CatalogFile {
         override val format: FileFormat
-            get() = format ?: path.format
+            get() = format ?: path.toString().format
             ?: project.throwException("Couldn't resolve file format $path")
 
         override val data: String
-            get() = File(path).also {
+            get() = path.toFile().also {
                 if (!it.exists() || !it.isFile) {
                     project.throwException("catalog file not found")
                 }
             }.readText()
     }
 
-    fun catalogFromUrl(href: String, format: FileFormat? = null) = object : CatalogFile {
+    fun catalogFromUrl(href: String, format: FileFormat? = null) = catalogFromUrl(
+        href = URL(href),
+        format = format,
+    )
+    fun catalogFromUrl(href: URL, format: FileFormat? = null) = object : CatalogFile {
         override val format: FileFormat
-            get() = format ?: href.format
+            get() = format ?: href.path.format
             ?: project.throwException("Couldn't resolve file format $href")
 
         override val data: String
-            get() = URL(href).readText()
+            get() = href.readText()
     }
 
     fun catalogFromString(data: String, format: FileFormat) = object : CatalogFile {
@@ -188,45 +235,6 @@ open class CatalogProjectExtension @Inject constructor(
                     module.plugins.apply(plugin)
                 }
             }
-        }
-    }
-
-    fun checkDependenciesVersion(
-        ignore_alpha: Boolean = false,
-        ignore_beta: Boolean = false,
-        ignore_rc: Boolean = false
-    ) {
-        forEach { key, _ ->
-            val dependencyFullName = string(key).lowercase()
-            val indexOfVersionSeparator = dependencyFullName.lastIndexOf(':')
-            if (indexOfVersionSeparator != -1) {
-                val dependencyName = dependencyFullName.substring(0, indexOfVersionSeparator)
-                val dependencyVersion = dependencyFullName.substring(indexOfVersionSeparator + 1)
-                kotlin.runCatching {
-                    val resolvedVersions = project.configurations.detachedConfiguration(
-                        project.dependencies.create("$dependencyName:+")
-                    ).resolvedConfiguration.resolvedArtifacts
-                    resolvedVersions.filter {
-                        val displayName = it.id.componentIdentifier.displayName.lowercase()
-                        val version = it.moduleVersion.id.version.lowercase()
-                        displayName.startsWith(dependencyName)
-                                && (!ignore_alpha || dependencyVersion.contains("alpha") || !version.contains(
-                            "alpha"
-                        ))
-                                && (!ignore_beta || dependencyVersion.contains("beta") || !version.contains(
-                            "beta"
-                        ))
-                                && (!ignore_rc || dependencyVersion.contains("rc") || !version.contains(
-                            "rc"
-                        ))
-                    }.map { it.moduleVersion.id.version.lowercase() }.maxByOrNull { it }?.let {
-                        if (it != dependencyVersion) {
-                            project.logInfo("${key.absolute()}: can be updated from $dependencyVersion to $it")
-                        }
-                    }
-                }
-            }
-
         }
     }
 

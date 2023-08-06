@@ -16,9 +16,9 @@
     "defaultCompileSdk": 33,
     "defaultMinCompileSdk": 21,
     "defaultTargetCompileSdk": "${defaultCompileSdk}",
-    "javasource": "VERSION_17",
-    "javaTarget": "${javasource}",
-    "jvmTarget": "${javasource}",
+    "javaSource": "VERSION_17",
+    "javaTarget": "${javaSource}",
+    "jvmTarget": "${javaSource}",
     "composeCompiler": "1.4.8",
     "dependencies": {
       "core": {

@@ -1,3 +1,4 @@
+#application package base
 domain: com.tezov
 
 resourcesExcluded:
@@ -12,8 +13,8 @@ resourcesExcluded:
 - META-INF/ASL2.0
 - META-INF/LGPL2.1
 
+#Configuration versions
 projectVersion :
-  
   defaultCompileSdk: 33
   defaultMinCompileSdk: 21
   defaultTargetCompileSdk: ${defaultCompileSdk}
@@ -38,9 +39,9 @@ projectVersion :
     compose:
       compose_ui_tooling: 1.4.3
       compose_ui_manifest: 1.4.3
-    
+
+#Configuration dependencies path
 projectPath :
-  
   dependencies:
     core:
       kotlin: androidx.core:core-ktx:${projectVersion.dependencies.core.kotlin}
@@ -52,24 +53,21 @@ projectPath :
       foundation: androidx.compose.foundation:foundation:${projectVersion.dependencies.compose.foundation
       activity: androidx.activity:activity-compose:${projectVersion.dependencies.compose.activity
       ui_preview: androidx.compose.ui:ui-tooling-preview:${projectVersion.dependencies.compose.ui_preview
-  
   dependencies_debug:
     compose:
       compose_ui_tooling: androidx.compose.ui:ui-tooling:${projectVersion.dependencies_debug.compose.compose_ui_tooling}
       compose_ui_manifest: androidx.compose.ui:ui-test-manifest:${projectVersion.dependencies_debug.compose.compose_ui_manifest
-
+#Configuration plugins modules application
 plugin:
   android: com.android
   application: ${android}.application
   library: ${android}.library
   kotlin: org.jetbrains.kotlin.android
   tezov_project_config: com.tezov.plugin_project.config
-
 demo_app:
   - ${plugin.application}
   - ${plugin.kotlin}
   - ${plugin.tezov_project_config}
-
 demo_lib:
   - ${plugin.library}
   - ${plugin.kotlin}

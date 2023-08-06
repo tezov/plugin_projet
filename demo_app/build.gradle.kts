@@ -1,7 +1,7 @@
 tezovConfig {
 
     configuration {
-        domain = "com.tezov"
+        domain = tezovCatalog.string("domain")
 //        languages.apply{
 //            add("fr")
 //            add("en")
@@ -37,7 +37,7 @@ android {
         with("projectVersion") {
             compileSdk = int("defaultCompileSdk")
             compileOptions {
-                sourceCompatibility = javaVersion("javasource")
+                sourceCompatibility = javaVersion("javaSource")
                 targetCompatibility = javaVersion("javaTarget")
             }
             kotlinOptions {

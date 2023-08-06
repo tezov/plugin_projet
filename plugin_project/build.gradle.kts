@@ -1,5 +1,7 @@
+import kotlin.io.path.Path
+
 val domainName = "com.tezov"
-val tezovPluginVersion = "1.0.1"
+val tezovPluginVersion = "1.0.2"
 val alphaVersion:Int? = null
 val domainVersion = StringBuilder().apply {
     append(tezovPluginVersion)
@@ -16,7 +18,6 @@ buildscript {
 
 plugins {
     `kotlin-dsl`
-//    id("maven-publish")
     id("com.gradle.plugin-publish") version "1.2.0"
 }
 
@@ -58,28 +59,14 @@ dependencies {
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-toml:2.15.2")
 }
 
-//val sourcesJar by tasks.registering(Jar::class) {
-//    archiveClassifier.set("sources")
-//    from(sourceSets.main.get().allSource)
-//}
-
 afterEvaluate {
     publishing {
         repositories {
             maven {
                 name = "localRepository"
-                url = uri(file("F:\\android_project\\repository\\").path)
+                url = uri(Path("${project.projectDir}", "/repository/").toString())
             }
         }
-//        publications {
-//            register(project.name, MavenPublication::class) {
-//                from(components["java"])
-//                groupId = domain_name
-//                artifactId = project.name
-//                version = domain_version
-//                artifact(sourcesJar.get())
-//            }
-//        }
     }
 }
 

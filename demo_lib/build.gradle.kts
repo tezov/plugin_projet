@@ -16,7 +16,7 @@ android {
         with("projectVersion") {
             compileSdk = int("defaultCompileSdk")
             compileOptions {
-                sourceCompatibility = javaVersion("javasource")
+                sourceCompatibility = javaVersion("javaSource")
                 targetCompatibility = javaVersion("javaTarget")
             }
             kotlinOptions {
