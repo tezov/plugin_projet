@@ -1,12 +1,5 @@
 # Tezov plugin project
 
-## What's New
-- 03/08/2023 - 1.0.1 
-  - catalog cached with placeholder already replaced
-  - rebuild placeholder key from inner to outer levels
-  - add absolute key when using with scope
-- 02/08/2023 - 1.0.0 - first release
-
 ## Description
 Gradle plugins for Android project. ** The 2 plugins are not dependant to each other. They can be used separately or together.
 
