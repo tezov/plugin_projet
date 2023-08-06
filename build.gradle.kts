@@ -1,5 +1,3 @@
-//import kotlin.io.path.Path
-//
 //// uncomment to try plugin project demo
 //
 //plugins {

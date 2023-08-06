@@ -22,6 +22,8 @@ shared version, dependencies and constants between modules
   - check dependencies latest version
   - accepted catalog format Json, Yaml and Toml
 
+[Catalog plugin on Gradle portal](https://plugins.gradle.org/plugin/com.tezov.plugin_project.catalog)
+
 **Plugin Config**
 auto configuration multi module application and proguard debug tool
 - version "major.minor.patch(-alpha.x|RC.x)
@@ -29,6 +31,8 @@ auto configuration multi module application and proguard debug tool
 - auto Jrunner path (must be inside the folder "'configuration.domain'.'module_name'.JUnit" and have JUnitRunner.kt file name)
 - user friendly setup with build type available
 - sourceSet config
+
+[Config plugin on Gradle portal](https://plugins.gradle.org/plugin/com.tezov.plugin_project.config)
 
 ## How to install -Catalog- plugin
 - add classpath and repositories to settings.gradle.kts
