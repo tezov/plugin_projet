@@ -1,40 +1,145 @@
 package com.tezov.plugin_project.catalog
 
+import com.tezov.plugin_project.Logger.logError
 import com.tezov.plugin_project.Logger.throwException
+import com.tezov.plugin_project.catalog.CatalogProjectExtension.FileFormat.Companion.format
+import com.tezov.plugin_project.catalog.CatalogProjectExtension.FileFormat.Companion.throwExceptionUnsupportedFormat
 import org.gradle.api.JavaVersion
+import java.net.URL
+import kotlin.io.path.Path
 
 internal class CatalogMap(
     private val extension: CatalogProjectExtension,
-    rawCatalog: Map<String, String>
+    uri: CatalogProjectExtension.CatalogFile,
 ) {
 
     companion object {
         const val PLACE_HOLDER_START = '$'
         val PLACE_HOLDER_REGEX = Regex("""(\$\{(.*?)\})""")
+
+        const val PLACE_HOLDER_FILE_START = "file://"
+        const val PLACE_HOLDER_URL_START = "url://"
+
         const val KEY_SEPARATOR = '.'
         const val ARRAY_SEPARATOR = ','
+        const val FILE_SEPARATOR = '/'
+
         val DEFAULT_THROW = { key: String ->
             throw IndexOutOfBoundsException("key $key not found")
         }
     }
 
-    private val catalog: MutableMap<String, String> = mutableMapOf()
+    private val catalog: MutableMap<String, String>
 
     init {
-        rawCatalog.forEach {
-            val value = if (it.value.contains(PLACE_HOLDER_START)) {
-                stringPlaceHolderRecurseReplace(it.key, rawCatalog)!!
-            } else it.value
-            this@CatalogMap.catalog[it.key] = value
+        catalog = CatalogReader.read(uri).toMutableMap()
+        placeHolderFileReplace(catalog)
+        placeHolderValueReplaceAll(catalog)
+    }
+
+    private fun placeHolderFileReplace(catalog: MutableMap<String, String>) {
+        val mapToAppend = mutableListOf<Pair<String, Map<String, String>>>()
+        placeHolderFileReplaceAllRecurse(catalog, mapToAppend)
+        mapToAppend.forEach {
+            catalog.remove(it.first)
+            catalog.putAll(it.second)
         }
     }
 
-    private fun stringPlaceHolderRecurseReplace(
+    private fun placeHolderFileReplaceAllRecurse(
+        catalog: Map<String, String>,
+        catalogToAppend: MutableList<Pair<String, Map<String, String>>>
+    ) {
+        catalog.forEach { entry ->
+            placeHolderFileRetrieveMap(entry.key, entry.value)?.let {
+                catalogToAppend.add(Pair(entry.key, it))
+                placeHolderFileReplaceAllRecurse(it, catalogToAppend)
+            }
+        }
+    }
+
+    private fun placeHolderFileRetrieveMap(
         key: String,
-        catalog: Map<String, String>
-    ): String? {
+        value: String
+    ): Map<String, String>? {
         with(extension) {
-            val value = catalog[key] ?: return null
+            if (!value.startsWith(PLACE_HOLDER_START)) return null
+            var path = PLACE_HOLDER_REGEX.find(value)?.let {
+                if (it.groups.size >= 3) {
+                    it.groups[2]?.value
+                } else null
+            } ?: return null
+            val uri = when {
+                path.contains(PLACE_HOLDER_FILE_START) -> {
+                    path = path.replaceFirst(PLACE_HOLDER_FILE_START, "")
+                    val authority = path.substringBefore(FILE_SEPARATOR, "")
+                    if (authority.isEmpty()) {
+                        extension.project.logError("Module name (Authority) not found in file $value for key $key")
+                    }
+                    path = path.replaceFirst(authority, "")
+                    val project = extension.project.allprojects.find {
+                        it.name == authority
+                    } ?: run {
+                        extension.project.throwException("Module $authority not found in all project $value for key $key")
+                    }
+                    object : CatalogProjectExtension.CatalogFile {
+                        override val format: CatalogProjectExtension.FileFormat
+                            get() = path.format
+                                ?: throwExceptionUnsupportedFormat(
+                                    project,
+                                    "Couldn't resolve file format $path for key $key."
+                                )
+                        override val data: String
+                            get() = Path(project.projectDir.path, path).toFile().also {
+                                if (!it.exists() || !it.isFile) {
+                                    project.throwException("catalog file not found $it form $key")
+                                }
+                            }.readText()
+                    }
+                }
+
+                path.contains(PLACE_HOLDER_URL_START) -> {
+                    path = path.replaceFirst(PLACE_HOLDER_URL_START, "")
+                    object : CatalogProjectExtension.CatalogFile {
+                        override val format: CatalogProjectExtension.FileFormat
+                            get() = path.format
+                                ?: throwExceptionUnsupportedFormat(
+                                    project,
+                                    "Couldn't resolve url format $path for key $key."
+                                )
+                        override val data: String
+                            get() = URL(path).readText()
+                    }
+                }
+
+                else -> null
+            } ?: return null
+            return CatalogReader.read(uri)
+        }
+    }
+
+    private fun placeHolderValueReplaceAll(catalog: MutableMap<String, String>) {
+        val valueToUpdate = mutableMapOf<String, String>()
+        catalog.forEach { entry ->
+            placeHolderValueReplaceAllRecurse(
+                key = entry.key,
+                value = entry.value,
+                catalog = catalog
+            ).takeIf { it != entry.value }?.let {
+                valueToUpdate[entry.key] = it
+            }
+        }
+        valueToUpdate.forEach { entry ->
+            catalog[entry.key] = entry.value
+        }
+    }
+
+    private fun placeHolderValueReplaceAllRecurse(
+        key: String,
+        value: String,
+        catalog: Map<String, String>
+    ): String {
+        with(extension) {
             if (!value.contains(PLACE_HOLDER_START)) return value
             val valueBuilder = StringBuilder(value)
             var indexOffset = 0
@@ -44,7 +149,7 @@ internal class CatalogMap(
                 //find first valid placeholder value from inside to outside
                 val placeHolderKey = it.groups[2]?.value ?: continue
                 val keys = key.split(KEY_SEPARATOR).toMutableList()
-                var placeHolderValue: String?
+                var placeHolderValue: String? = null
                 do {
                     keys.removeLast()
                     val placeHolderKeyRebuilt = StringBuilder().apply {
@@ -52,11 +157,14 @@ internal class CatalogMap(
                         if (isNotEmpty()) append(KEY_SEPARATOR)
                         append(placeHolderKey)
                     }.toString()
-                    placeHolderValue =
-                        stringPlaceHolderRecurseReplace(
-                            key = placeHolderKeyRebuilt,
-                            catalog = catalog
-                        )
+                    catalog[placeHolderKeyRebuilt]?.let {
+                        placeHolderValue =
+                            placeHolderValueReplaceAllRecurse(
+                                key = placeHolderKeyRebuilt,
+                                value = it,
+                                catalog = catalog
+                            )
+                    }
                     if (placeHolderValue != null) break
                 } while (keys.isNotEmpty())
                 placeHolderValue ?: kotlin.run {
@@ -69,7 +177,7 @@ internal class CatalogMap(
                         (it.last + indexOffset + 1),
                         placeHolderValue
                     )
-                    indexOffset += (placeHolderValue.length - it.count())
+                    indexOffset += (placeHolderValue!!.length - it.count())
                 }
             }
             return valueBuilder.toString()

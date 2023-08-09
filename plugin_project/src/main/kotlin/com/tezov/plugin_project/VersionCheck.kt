@@ -10,6 +10,7 @@ object VersionCheck {
 
     private val MIN_VERSION_GRADLE = GradleVersion.version("8.0")
     private val MIN_VERSION_ANDROID = GradleVersion.version("8.0.2")
+    private const val NO_VERSION_ANDROID = "0.0.0"
 
     private var androidPluginCurrentVersion:GradleVersion? = null
 
@@ -32,7 +33,7 @@ object VersionCheck {
                         classpathMatch?.groupValues?.get(1)?.let { dependency ->
                             if (dependency.startsWith(ANDROID_PLUGIN_CLASSPATH)) {
                                 androidPluginCurrentVersion = kotlin.runCatching {
-                                    GradleVersion.version(dependency.substringAfterLast(":"))
+                                    GradleVersion.version(dependency.substringAfterLast(":", NO_VERSION_ANDROID))
                                 }.getOrNull()
                                 return@forEachLine
                             }

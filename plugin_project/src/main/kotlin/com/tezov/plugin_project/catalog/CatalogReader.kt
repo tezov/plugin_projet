@@ -6,7 +6,13 @@ import com.fasterxml.jackson.dataformat.toml.TomlFactory
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.tezov.plugin_project.catalog.CatalogMap.Companion.ARRAY_SEPARATOR
 
-internal object CatalogBuilder {
+internal object CatalogReader {
+
+    fun read(uri: CatalogProjectExtension.CatalogFile) = when (uri.format) {
+        CatalogProjectExtension.FileFormat.Json -> json(uri = uri)
+        CatalogProjectExtension.FileFormat.Yaml -> yaml(uri = uri)
+        CatalogProjectExtension.FileFormat.Toml -> toml(uri = uri)
+    }
 
     private fun Map<String, Any>.flattenMap(
         outputMap: MutableMap<String, String>,
@@ -26,10 +32,9 @@ internal object CatalogBuilder {
         }
     }
 
-    fun json(
-        extension: CatalogProjectExtension,
+    private fun json(
         uri: CatalogProjectExtension.CatalogFile,
-    ):CatalogMap {
+    ): Map<String, String> {
         val objectMapper = ObjectMapper()
         objectMapper.findAndRegisterModules()
         val inputMap = objectMapper.readValue(
@@ -38,16 +43,12 @@ internal object CatalogBuilder {
         )
         val rawCatalog = mutableMapOf<String, String>()
         inputMap.flattenMap(rawCatalog)
-        return CatalogMap(
-            extension = extension,
-            rawCatalog = rawCatalog
-        )
+        return rawCatalog
     }
 
-    fun yaml(
-        extension: CatalogProjectExtension,
+    private fun yaml(
         uri: CatalogProjectExtension.CatalogFile,
-    ):CatalogMap {
+    ): Map<String, String> {
         val objectMapper = ObjectMapper(YAMLFactory())
         objectMapper.findAndRegisterModules()
         val inputMap = objectMapper.readValue(
@@ -56,16 +57,12 @@ internal object CatalogBuilder {
         )
         val rawCatalog = mutableMapOf<String, String>()
         inputMap.flattenMap(rawCatalog)
-        return CatalogMap(
-            extension = extension,
-            rawCatalog = rawCatalog
-        )
+        return rawCatalog
     }
 
-    fun toml(
-        extension: CatalogProjectExtension,
+    private fun toml(
         uri: CatalogProjectExtension.CatalogFile,
-    ):CatalogMap {
+    ): Map<String, String> {
         val objectMapper = ObjectMapper(TomlFactory())
         objectMapper.findAndRegisterModules()
         val inputMap = objectMapper.readValue(
@@ -74,10 +71,7 @@ internal object CatalogBuilder {
         )
         val rawCatalog = mutableMapOf<String, String>()
         inputMap.flattenMap(rawCatalog)
-        return CatalogMap(
-            extension = extension,
-            rawCatalog = rawCatalog
-        )
+        return rawCatalog
     }
 
 }

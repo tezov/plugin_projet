@@ -1,16 +1,17 @@
 # Tezov plugin project
 
 ## Description
-Gradle plugins for Android project. ** The 2 plugins are not dependant to each other. They can be used separately or together.
+Gradle plugins for Android project. **The 2 plugins are not dependant to each other hence they can be used separately or together.
 
 **Plugin Catalog**
 shared version, dependencies and constants between modules
   - auto apply plugin to modules
   - shared custom variables
-  - shared dependencies path/version
-  - remote or local catalog
+  - shared dependencies coordinate/version
+  - catalog can be remote or local
+  - include file or url catalog inside another catalog 
   - check dependencies latest version
-  - accepted catalog format Json, Yaml and Toml
+  - accepted catalog format Json, Yaml and Toml (can be mix when included)
 
 Min gradle version : 8.0 :
 [Catalog plugin on Gradle portal](https://plugins.gradle.org/plugin/com.tezov.plugin_project.catalog)
@@ -154,12 +155,18 @@ dependencies {
   - If the placeholder is inside the same level, you don't need to write the full key but just the last part. When place holder is not complete, there is a look up from inside to outside.
 - If a property name is equal to module name at level 0, an array of plugins is expected. All plugin will be auto apply and also the catalog plugin to each modules
   - plugin version come from from the version you used in classpath setting
-
+- include file or url catalog inside another catalog
+  - useful to have a common dependencies file between different project application to include inside another catalog to a specific application.
+  - useful to inject different placeholder meanings between debug, release or keep private key from others.
+  - the include is also recursive (if two identical keys are in different files, only one will survive to merge. Which one, can't be predicted. Be careful. Except key for include that can be duplicated)
+  - file include should follow "key : ${file://module_name_where_the_file_is/any_path_from_the_module.extension_supported}" (yaml, json or toml)
+  - url include should follow "key : ${url://complete_url_where_the_file_is.extension_supported}" (yaml, json or toml)
 ## Pro and Cons
 
 pro
 - one single version / dependencies path / constants for a multi external modules project.
 - catalog can be remote or local
+- catalog can be split and include from anywhere.
 
 con
 - lost of notification from the IDE which tells you that there is a new version, but can do some check with checkDependenciesVersion

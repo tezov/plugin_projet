@@ -37,10 +37,11 @@ open class CatalogScope internal constructor(
         replaceFirst(keyBase, "").dropWhile { it == KEY_SEPARATOR }
     } else ""
 
-    fun with(key: String, isKeyAbsolute:Boolean = false, block: CatalogScope.() -> Unit) = CatalogScope(
-        project = project,
-        keyBase = if(isKeyAbsolute) key else key.absolute(),
-    ).also { it.catalog = catalog }.block()
+    fun with(key: String, isKeyAbsolute: Boolean = false, block: CatalogScope.() -> Unit) =
+        CatalogScope(
+            project = project,
+            keyBase = if (isKeyAbsolute) key else key.absolute(),
+        ).also { it.catalog = catalog }.block()
 
     val keys get() = catalog.keys
 
@@ -149,7 +150,11 @@ open class CatalogProjectExtension @Inject constructor(
         Json("json"), Yaml("yaml"), Toml("toml");
 
         companion object {
-            inline val String.extension get() = substringAfterLast('.')
+
+            fun throwExceptionUnsupportedFormat(project: Project, message: String): Nothing =
+                project.throwException("$message Only .json / .yaml / .toml are supported")
+
+            inline val String.extension get() = substringAfterLast('.', "")
 
             inline val String.format
                 get() = FileFormat.values().find { it.extension == extension }
@@ -159,14 +164,14 @@ open class CatalogProjectExtension @Inject constructor(
     var catalogFile by PropertyDelegate<CatalogFile?> { null }
     var catalogType by PropertyDelegate<FileFormat?> { null }
 
-    fun catalogFromFile(path: String, format: FileFormat? = null) = catalogFromFile(
-        path = Path.of(path),
-        format = format,
+    fun catalogFromFile(path: String) = catalogFromFile(
+        path = Path.of(path)
     )
-    fun catalogFromFile(path: Path, format: FileFormat? = null) = object : CatalogFile {
+
+    fun catalogFromFile(path: Path) = object : CatalogFile {
         override val format: FileFormat
-            get() = format ?: path.toString().format
-            ?: project.throwException("Couldn't resolve file format $path")
+            get() = path.toString().format
+                ?: FileFormat.throwExceptionUnsupportedFormat(project, "Couldn't resolve file format $path")
 
         override val data: String
             get() = path.toFile().also {
@@ -176,14 +181,14 @@ open class CatalogProjectExtension @Inject constructor(
             }.readText()
     }
 
-    fun catalogFromUrl(href: String, format: FileFormat? = null) = catalogFromUrl(
-        href = URL(href),
-        format = format,
+    fun catalogFromUrl(href: String) = catalogFromUrl(
+        href = URL(href)
     )
-    fun catalogFromUrl(href: URL, format: FileFormat? = null) = object : CatalogFile {
+
+    fun catalogFromUrl(href: URL) = object : CatalogFile {
         override val format: FileFormat
-            get() = format ?: href.path.format
-            ?: project.throwException("Couldn't resolve file format $href")
+            get() = href.path.format
+            ?: FileFormat.throwExceptionUnsupportedFormat(project, "Couldn't resolve file format $href")
 
         override val data: String
             get() = href.readText()
@@ -204,20 +209,10 @@ open class CatalogProjectExtension @Inject constructor(
         val uri = catalogFile ?: run {
             project.throwException("catalog path is null")
         }
-        catalog = when (uri.format) {
-            FileFormat.Json -> CatalogBuilder.json(
-                extension = this,
-                uri = uri
-            )
-            FileFormat.Yaml -> CatalogBuilder.yaml(
-                extension = this,
-                uri = uri
-            )
-            FileFormat.Toml -> CatalogBuilder.toml(
-                extension = this,
-                uri = uri
-            )
-        }
+        catalog = CatalogMap(
+            extension = this,
+            uri = uri,
+        )
     }
 
     private fun applyProjectsPlugin() {

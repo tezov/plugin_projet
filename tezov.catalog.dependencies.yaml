@@ -1,0 +1,66 @@
+resourcesExcluded:
+- META-INF/DEPENDENCIES
+- META-INF/LICENSE
+- META-INF/LICENSE.txt
+- META-INF/LICENSE.md
+- META-INF/LICENSE-notice.md
+- META-INF/NOTICE
+- META-INF/NOTICE.txt
+- META-INF/NOTICE.md
+- META-INF/ASL2.0
+- META-INF/LGPL2.1
+
+#Configuration versions
+projectVersion :
+  defaultCompileSdk: 33
+  defaultMinCompileSdk: 21
+  defaultTargetCompileSdk: ${defaultCompileSdk}
+  javaSource: VERSION_17
+  javaTarget: ${javaSource}
+  jvmTarget: ${javaSource}
+  composeCompiler: 1.4.8
+  
+  dependencies:
+    core:
+      kotlin: 1.10.1
+      lifecycle_runtime: 2.6.1
+    compose:
+      ui: 1.4.3
+      runtime: 1.4.3
+      material3: 1.1.1
+      foundation: 1.4.3
+      activity: 1.7.2
+      ui_preview: 1.4.3
+  
+  dependencies_debug:
+    compose:
+      compose_ui_tooling: 1.4.3
+      compose_ui_manifest: 1.4.3
+
+#Configuration dependencies path
+projectPath :
+  dependencies:
+    core:
+      kotlin: androidx.core:core-ktx:${projectVersion.dependencies.core.kotlin}
+      lifecycle_runtime: androidx.lifecycle:lifecycle-runtime-ktx:${projectVersion.dependencies.core.lifecycle_runtime}
+    compose:
+      ui: androidx.compose.ui:ui:${projectVersion.dependencies.compose.ui
+      runtime: androidx.compose.runtime:runtime:${projectVersion.dependencies.compose.runtime
+      material3: androidx.compose.material3:material3:${projectVersion.dependencies.compose.material3
+      foundation: androidx.compose.foundation:foundation:${projectVersion.dependencies.compose.foundation
+      activity: androidx.activity:activity-compose:${projectVersion.dependencies.compose.activity
+      ui_preview: androidx.compose.ui:ui-tooling-preview:${projectVersion.dependencies.compose.ui_preview
+  dependencies_debug:
+    compose:
+      compose_ui_tooling: androidx.compose.ui:ui-tooling:${projectVersion.dependencies_debug.compose.compose_ui_tooling}
+      compose_ui_manifest: androidx.compose.ui:ui-test-manifest:${projectVersion.dependencies_debug.compose.compose_ui_manifest
+
+#Configuration plugins
+plugin:
+  android: com.android
+  application: ${android}.application
+  library: ${android}.library
+  kotlin: org.jetbrains.kotlin.android
+  tezov_project_config: com.tezov.plugin_project.config
+
+
