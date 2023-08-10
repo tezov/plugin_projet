@@ -1,6 +1,10 @@
 #application package base
 domain = "com.tezov"
 dependencies = "${file://plugin_project_demo/tezov.catalog.dependencies.yaml}"
+#dependencies = "${file://./tezov.catalog.dependencies.yaml}" # same as above
+#dependencies = "${file://../tezov.catalog.dependencies.yaml}" # before root dir project
+#dependencies = "${file://../../tezov.catalog.dependencies.yaml}" # before and again before root dir project
+
 #Configuration plugin application
 demo_app = [
   "${plugin.application}",

@@ -6,6 +6,7 @@ import com.tezov.plugin_project.catalog.CatalogProjectExtension.FileFormat.Compa
 import com.tezov.plugin_project.catalog.CatalogProjectExtension.FileFormat.Companion.throwExceptionUnsupportedFormat
 import org.gradle.api.JavaVersion
 import java.net.URL
+import java.nio.file.Path
 import kotlin.io.path.Path
 
 internal class CatalogMap(
@@ -16,9 +17,12 @@ internal class CatalogMap(
     companion object {
         const val PLACE_HOLDER_START = '$'
         val PLACE_HOLDER_REGEX = Regex("""(\$\{(.*?)\})""")
+        val BACK_TOKEN_REGEX = Regex("^(\\.\\./)*\\.\\.$")
 
         const val PLACE_HOLDER_FILE_START = "file://"
         const val PLACE_HOLDER_URL_START = "url://"
+        const val PATH_BACK_TOKEN = "../"
+        const val PATH_ROOT_TOKEN = "."
 
         const val KEY_SEPARATOR = '.'
         const val ARRAY_SEPARATOR = ','
@@ -62,60 +66,92 @@ internal class CatalogMap(
         key: String,
         value: String
     ): Map<String, String>? {
-        with(extension) {
-            if (!value.startsWith(PLACE_HOLDER_START)) return null
-            var path = PLACE_HOLDER_REGEX.find(value)?.let {
-                if (it.groups.size >= 3) {
-                    it.groups[2]?.value
-                } else null
-            } ?: return null
-            val uri = when {
-                path.contains(PLACE_HOLDER_FILE_START) -> {
+        if (!value.startsWith(PLACE_HOLDER_START)) return null
+        val path = PLACE_HOLDER_REGEX.find(value)?.let {
+            if (it.groups.size >= 3) {
+                it.groups[2]?.value
+            } else null
+        } ?: return null
+        val uri = when {
+            path.contains(PLACE_HOLDER_FILE_START) -> {
+                placeHolderFileRetrieveUriFromPath(
+                    key = key,
+                    value = value,
                     path = path.replaceFirst(PLACE_HOLDER_FILE_START, "")
-                    val authority = path.substringBefore(FILE_SEPARATOR, "")
-                    if (authority.isEmpty()) {
-                        extension.project.logError("Module name (Authority) not found in file $value for key $key")
-                    }
-                    path = path.replaceFirst(authority, "")
-                    val project = extension.project.allprojects.find {
-                        it.name == authority
-                    } ?: run {
-                        extension.project.throwException("Module $authority not found in all project $value for key $key")
-                    }
-                    object : CatalogProjectExtension.CatalogFile {
-                        override val format: CatalogProjectExtension.FileFormat
-                            get() = path.format
-                                ?: throwExceptionUnsupportedFormat(
-                                    project,
-                                    "Couldn't resolve file format $path for key $key."
-                                )
-                        override val data: String
-                            get() = Path(project.projectDir.path, path).toFile().also {
-                                if (!it.exists() || !it.isFile) {
-                                    project.throwException("catalog file not found $it form $key")
-                                }
-                            }.readText()
-                    }
-                }
+                )
+            }
 
-                path.contains(PLACE_HOLDER_URL_START) -> {
+            path.contains(PLACE_HOLDER_URL_START) -> {
+                placeHolderFileRetrieveUriFromUrl(
+                    key = key,
+                    value = value,
                     path = path.replaceFirst(PLACE_HOLDER_URL_START, "")
-                    object : CatalogProjectExtension.CatalogFile {
-                        override val format: CatalogProjectExtension.FileFormat
-                            get() = path.format
-                                ?: throwExceptionUnsupportedFormat(
-                                    project,
-                                    "Couldn't resolve url format $path for key $key."
-                                )
-                        override val data: String
-                            get() = URL(path).readText()
-                    }
-                }
+                )
+            }
 
-                else -> null
-            } ?: return null
-            return CatalogReader.read(uri)
+            else -> null
+        } ?: return null
+        return CatalogReader.read(uri)
+    }
+
+    private fun placeHolderFileRetrieveUriFromPath(
+        key: String,
+        value: String,
+        path: String,
+    ): CatalogProjectExtension.CatalogFile {
+        val authority = path.substringBefore(FILE_SEPARATOR, "")
+        if (authority.isEmpty()) {
+            extension.project.logError("Module name (Authority) or '../' (back token) not found in file $value for key $key")
         }
+        val absolutePath: Path = when {
+            authority == PATH_ROOT_TOKEN -> {
+                Path(extension.project.rootDir.path, path.replaceFirst(authority, ""))
+            }
+            BACK_TOKEN_REGEX.matches(authority) -> {
+                val backTokenCount = (authority.length / PATH_BACK_TOKEN.length) + 1
+                var root = extension.project.rootDir.toPath()
+                (0 until backTokenCount).forEach { _ -> root = root.parent }
+                Path(root.toString(), path.replaceFirst(authority, ""))
+            }
+            else -> {
+                val project = extension.project.allprojects.find {
+                    it.name == authority
+                } ?: run {
+                    extension.project.throwException("Module $authority not found in all project $value for key $key")
+                }
+                Path(project.projectDir.path, path.replaceFirst(authority, ""))
+            }
+        }
+        println(absolutePath.toString())
+        return object : CatalogProjectExtension.CatalogFile {
+            override val format: CatalogProjectExtension.FileFormat
+                get() = absolutePath.toString().format
+                    ?: throwExceptionUnsupportedFormat(
+                        extension.project,
+                        "Couldn't resolve file format $path for key $key."
+                    )
+            override val data: String
+                get() = absolutePath.toFile().also {
+                    if (!it.exists() || !it.isFile) {
+                        extension.project.throwException("catalog file not found $it from $key")
+                    }
+                }.readText()
+        }
+    }
+
+    private fun placeHolderFileRetrieveUriFromUrl(
+        key: String,
+        value: String,
+        path: String,
+    ) = object : CatalogProjectExtension.CatalogFile {
+        override val format: CatalogProjectExtension.FileFormat
+            get() = path.format
+                ?: throwExceptionUnsupportedFormat(
+                    extension.project,
+                    "Couldn't resolve url format $value for key $key."
+                )
+        override val data: String
+            get() = URL(path).readText()
     }
 
     private fun placeHolderValueReplaceAll(catalog: MutableMap<String, String>) {
@@ -142,8 +178,8 @@ internal class CatalogMap(
         with(extension) {
             if (!value.contains(PLACE_HOLDER_START)) return value
             val valueBuilder = StringBuilder(value)
-            var indexOffset = 0
             //multiple placeholder can be in value
+            var indexOffset = 0
             for (it in PLACE_HOLDER_REGEX.findAll(value)) {
                 if (it.groups.size < 3) continue
                 //find first valid placeholder value from inside to outside
