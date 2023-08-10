@@ -1,15 +1,15 @@
 # Tezov plugin project
 
 ## Description
-Gradle plugins for Android project. **The 2 plugins are not dependant to each other hence they can be used separately or together.
+Gradle plugins for Android project. The 2 plugins are not dependant to each other hence they can be used separately or together.
 
 **Plugin Catalog**
-shared version, dependencies and constants between modules
+shared version, dependencies coordinates and variables between modules
   - auto apply plugin to modules
   - shared custom variables
-  - shared dependencies coordinate/version
+  - shared dependencies coordinates/version
   - catalog can be remote or local
-  - include file or url catalog inside another catalog 
+  - include file or url catalog inside another catalog recursively
   - check dependencies latest version
   - accepted catalog format Json, Yaml and Toml (can be mix when included)
 
@@ -20,7 +20,7 @@ Min gradle version : 8.0 :
 auto configuration multi module application and proguard debug tool
 - version "major.minor.patch(-alpha.x|RC.x)
 - debug / release tool
-- auto Jrunner path (must be inside the folder "'configuration.domain'.'module_name'.JUnit" and have JUnitRunner.kt file name)
+- auto Jrunner path (must be inside the folder "'domain'.'module_name'.JUnit" and have JUnitRunner.kt file name)
 - user friendly setup with build type available
 - sourceSet config
 
@@ -152,15 +152,19 @@ dependencies {
   - name of modules at level 0 are reserved for plugins apply
 - You can use placeholder surrounded by ${...}
   - Placeholder key is flatten key dot separated
-  - If the placeholder is inside the same level, you don't need to write the full key but just the last part. When place holder is not complete, there is a look up from inside to outside.
+  - If the placeholder is inside the same level, you don't need to write the full key but just the last part. When placeholder is not complete, there is a look up from inside to outside.
 - If a property name is equal to module name at level 0, an array of plugins is expected. All plugin will be auto apply and also the catalog plugin to each modules
-  - plugin version come from from the version you used in classpath setting
 - include file or url catalog inside another catalog
-  - useful to have a common dependencies file between different project application to include inside another catalog to a specific application.
+  - useful to have a common dependencies file between different project application to include inside another catalog of a specific application.
   - useful to inject different placeholder meanings between debug, release or keep private key from others.
-  - the include is also recursive (if two identical keys are in different files, only one will survive to merge. Which one, can't be predicted. Be careful. Except key for include that can be duplicated)
-  - file include should follow "key : ${file://module_name_where_the_file_is/any_path_from_the_module.extension_supported}" (yaml, json or toml)
-  - url include should follow "key : ${url://complete_url_where_the_file_is.extension_supported}" (yaml, json or toml)
+  - the include is also recursive 
+    - if two identical keys are in different files, only one will survive to the merge. Which one, can't be predicted. Be careful. 
+    - The key used to include catalog file can be duplicated. When the merge is done, the key used is deleted. Any name can be used.
+  - file include should follow "anything_key : ${file://module_name_where_the_file_is/any_path_from_the_module.extension_supported}" (yaml, json or toml)
+    - module_name_where_the_file_is can be replace by
+      - . to specify the root dir project if you lazy to name it :)
+      - .. (as many as you need ../../../) to get out of the root dir. Usefull to keep only 1 dependencies files for all your app in the same folder.
+  - url include should follow "anything_key : ${url://complete_url_where_the_file_is.extension_supported}" (yaml, json or toml)
 ## Pro and Cons
 
 pro
