@@ -44,12 +44,12 @@ open class ExtensionLib @Inject constructor(
     internal val build = factory.newInstance(Build::class.java)
 
     val nameSpace get() = findConfigExtensionApp()?.let {
-        kotlin.runCatching { common.nameSpace(it) }.getOrNull()
+        kotlin.runCatching { common.nameSpace(it, false) }.getOrNull()
     } ?: run {
         project.throwException("nameSpace is not ready yet")
     }
     val applicationId get() = findConfigExtensionApp()?.let {
-        kotlin.runCatching { common.applicationId(it) }.getOrNull()
+        kotlin.runCatching { common.applicationId(it, false) }.getOrNull()
     } ?: run {
         project.throwException("applicationId is not ready yet")
     }

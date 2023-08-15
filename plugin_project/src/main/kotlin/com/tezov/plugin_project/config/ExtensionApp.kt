@@ -93,10 +93,10 @@ open class ExtensionApp @Inject constructor(
     internal val build = factory.newInstance(Build::class.java)
     val lint = factory.newInstance(Lint::class.java)
 
-    internal val nameSpace get() = kotlin.runCatching { common.nameSpace(this) }.getOrNull() ?: run {
+    internal val nameSpace get() = kotlin.runCatching { common.nameSpace(this, true) }.getOrNull() ?: run {
         project.throwException("nameSpace is not ready yet")
     }
-    val applicationId get() = kotlin.runCatching { common.applicationId(this) }.getOrNull() ?: run {
+    val applicationId get() = kotlin.runCatching { common.applicationId(this, true) }.getOrNull() ?: run {
         project.throwException("applicationId is not ready yet")
     }
     val packageName get() = kotlin.runCatching { common.packageName(this) }.getOrNull() ?: run {

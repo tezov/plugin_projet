@@ -122,7 +122,6 @@ internal class CatalogMap(
                 Path(project.projectDir.path, path.replaceFirst(authority, ""))
             }
         }
-        println(absolutePath.toString())
         return object : CatalogProjectExtension.CatalogFile {
             override val format: CatalogProjectExtension.FileFormat
                 get() = absolutePath.toString().format

@@ -8,32 +8,34 @@ internal class ExtensionCommon(
     private val project: Project
 ) {
 
-    fun nameSpace(configExtension: ExtensionApp) = StringBuilder().apply {
+    fun domain(configExtension: ExtensionApp, withSubDomain:Boolean) = StringBuilder().apply {
         with(configExtension.configuration) {
             append(domain)
-            subDomain?.let {
-                append('.')
-                append(it)
+            if(withSubDomain){
+                subDomain?.let {
+                    append('.')
+                    append(it)
+                }
             }
-            append('.')
-            append(project.name)
         }
     }.toString()
 
-    fun applicationId(configExtension: ExtensionApp) = StringBuilder().apply {
-        with(configExtension.configuration) {
-            append(domain)
-            subDomain?.let {
-                append('.')
-                append(it)
-            }
-            append('.')
-            append(project.rootProject.name)
-        }
+    fun nameSpace(configExtension: ExtensionApp, withSubDomain:Boolean) = StringBuilder().apply {
+        append(domain(configExtension, withSubDomain))
+        append('.')
+        append(project.name)
     }.toString()
 
-    fun packageName(configExtension: ExtensionApp) =
-        "${configExtension.configuration.domain}.${project.rootProject.name}${configExtension.build.currentType.suffix}"
+    fun applicationId(configExtension: ExtensionApp, withSubDomain:Boolean) = StringBuilder().apply {
+        append(domain(configExtension, withSubDomain))
+        append('.')
+        append(project.rootProject.name)
+    }.toString()
+
+    fun packageName(configExtension: ExtensionApp) = StringBuilder().apply {
+        append(applicationId(configExtension, true))
+        append(configExtension.build.currentType.suffix)
+    }.toString()
 
     var beforeVariant: ((buildType: BuildType) -> Unit)? = null
         set(value) {
