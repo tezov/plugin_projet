@@ -36,6 +36,7 @@ open class ExtensionApp @Inject constructor(
 
     open class Configuration {
         var domain by PropertyDelegate<String>()
+        var subDomain by PropertyDelegate<String?>{ null }
         val languages = mutableListOf<String>()
         var hasResources by PropertyDelegate { false }
         var hasAssets by PropertyDelegate { false }
