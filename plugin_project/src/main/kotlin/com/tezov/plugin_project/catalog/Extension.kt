@@ -7,9 +7,12 @@ import com.tezov.plugin_project.catalog.CatalogMap.Companion.DEFAULT_THROW
 import com.tezov.plugin_project.catalog.CatalogMap.Companion.KEY_SEPARATOR
 import com.tezov.plugin_project.catalog.CatalogProjectExtension.FileFormat.Companion.format
 import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_EXTENSION_NAME
+import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_PLUGIN_ID
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
-import java.io.File
+import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.api.initialization.Settings
+import org.gradle.kotlin.dsl.configure
 import java.net.URL
 import javax.inject.Inject
 import java.nio.file.Path
@@ -138,7 +141,7 @@ open class CatalogScope internal constructor(
 }
 
 open class CatalogProjectExtension @Inject constructor(
-    internal val project: Project
+    internal val project: Project,
 ) : CatalogScope(project = project, keyBase = "") {
 
     interface CatalogFile {
@@ -217,18 +220,16 @@ open class CatalogProjectExtension @Inject constructor(
 
     private fun applyProjectsPlugin() {
         project.allprojects.filter { it !== project }.forEach { module ->
-            module.plugins.apply(ProjectCatalogPlugin.CATALOG_PLUGIN_ID)
-            kotlin.runCatching {
+            module.plugins.apply(CATALOG_PLUGIN_ID)
+            runCatching {
                 module.extensions.findByName(CATALOG_EXTENSION_NAME) as? CatalogModuleExtension
             }.getOrNull()?.let {
                 it.catalog = catalog
             } ?: run {
                 project.throwException("catalog plugin not successfully apply to ${project.name}")
             }
-            stringListOrNull(key = module.name)?.let { plugins ->
-                plugins.forEach { plugin ->
-                    module.plugins.apply(plugin)
-                }
+            stringListOrNull(key = module.name)?.forEach { plugin ->
+                module.plugins.apply(plugin)
             }
         }
     }

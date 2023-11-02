@@ -1,7 +1,7 @@
 import kotlin.io.path.Path
 
 val domainName = "com.tezov"
-val tezovPluginVersion = "1.0.5"
+val tezovPluginVersion = "1.0.6"
 val alphaVersion:Int? = null
 val domainVersion = StringBuilder().apply {
     append(tezovPluginVersion)

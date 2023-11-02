@@ -28,36 +28,27 @@ Min gradle version : 8.0 and Min Android plugin version 8.0.2 :
 [Config plugin on Gradle portal](https://plugins.gradle.org/plugin/com.tezov.plugin_project.config)
 
 ## How to install -Catalog- plugin
-- add classpath and repositories to settings.gradle.kts
+- add plugin and repositories to settings.gradle.kts. And apply the plugin!
 
 ```
 buildscript {
-
-    dependencies {
-        classpath("com.tezov:plugin_project:?version?")
-        classpath("com.android.tools.build:gradle:?version?")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:?version?")
-    }
-
+    dependencies { ... }
     repositories {
-        mavenLocal()
-        google()
-        mavenCentral()
-        maven("https://jitpack.io")
+        ...
+        gradlePluginPortal()
+        ...
     }
 }
-```
 
-- add plugin to **root project** build.gradle.kts
-
-```
 plugins {
-   ...
-    id("com.tezov.plugin_project.catalog")
+    ...
+    id("com.tezov.plugin_project.catalog") version "?version?" apply true
+    ...
 }
+
 ```
 
-- still inside **root project** build.gradle.kts, specify the path of your json catalog
+- inside **root project** build.gradle.kts, specify the path of your json catalog
 
 ```
 tezovCatalog {
@@ -177,25 +168,27 @@ con
 
 
 ## How to install -Config- plugin
-- add classpath and repositories to settings.gradle.kts
+- add plugin and repositories to settings.gradle.kts. Do not apply the plugin.
 
 ```
 buildscript {
 
-    dependencies {
-        classpath("com.tezov:plugin_project:?version?")
-        classpath("com.android.tools.build:gradle:?version?")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:?version?")
-    }
+    dependencies { ... }
 
     repositories {
-        mavenLocal()
-        google()
-        mavenCentral()
-        maven("https://jitpack.io")
+        ...
+        gradlePluginPortal()
+        ...
     }
 
 }
+
+plugins {
+    ...
+    id("com.tezov.plugin_project.config") version "?version?" apply false
+    ...
+}
+
 ```
 
 - add plugin to module
@@ -288,6 +281,7 @@ tezovConfig {
 
 }
 ```
+**Note**: this plugin can be applied by the catalog plugin instead of standalone apply.
 
 ## How to try the demo
 - Uncomment // include (":demo_app", ":demo_lib") in setting.gradle.kts

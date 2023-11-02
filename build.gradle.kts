@@ -1,9 +1,4 @@
 //// uncomment to try plugin project demo
-//
-//plugins {
-//    id("com.tezov.plugin_project.catalog")
-//}
-//
 //tezovCatalog {
 //
 //    catalogFile = catalogFromFile("${project.projectDir}/tezov.catalog.yaml")
