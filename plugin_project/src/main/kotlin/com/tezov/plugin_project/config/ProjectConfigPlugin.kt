@@ -4,7 +4,7 @@ import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
 import com.tezov.plugin_project.Logger.throwException
 import com.tezov.plugin_project.VersionCheck
-import com.tezov.plugin_project.catalog.ProjectCatalogPlugin
+import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_PLUGIN_ID
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
@@ -20,7 +20,7 @@ class ProjectConfigPlugin : Plugin<Project> {
 
     override fun apply(project: Project) {
         VersionCheck.gradle(project, CONFIG_PLUGIN_ID)
-        VersionCheck.androidClasspath(project, ProjectCatalogPlugin.CATALOG_PLUGIN_ID)
+        VersionCheck.androidClasspath(project, CATALOG_PLUGIN_ID)
         project.extensions.findByName(ANDROID_EXTENSION_NAME)?.let {
             when(it){
                 is ApplicationExtension -> {
