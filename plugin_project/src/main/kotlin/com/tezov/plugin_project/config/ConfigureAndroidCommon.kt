@@ -1,8 +1,9 @@
 package com.tezov.plugin_project.config
 
 import com.android.build.api.dsl.AndroidSourceSet
-import com.tezov.plugin_project.Logger.logInfo
-import com.tezov.plugin_project.Logger.logWarning
+import com.tezov.plugin_project.Logger.PLUGIN_CONFIG
+import com.tezov.plugin_project.Logger.log
+import com.tezov.plugin_project.Logger.throwException
 import com.tezov.plugin_project.Utils.normalizePath
 import com.tezov.plugin_project.config.ExtensionCommon.Companion.invoke
 import com.tezov.plugin_project.config.Proguard.PlaceHolder
@@ -120,7 +121,7 @@ internal class ConfigureAndroidCommon(
     ) {
         buildTypes.getByName("release") {
             if (enableDebug) {
-                project.logInfo("************** DEBUG IS ACTIVE ON RELEASE **************")
+                project.log(PLUGIN_CONFIG,"************** DEBUG IS ACTIVE ON RELEASE **************")
             }
             protocol.proguardAddAll(this, proguards)
             if (enableDebug) {
@@ -168,8 +169,7 @@ internal class ConfigureAndroidCommon(
                         it.use { input -> input.copyTo(output) }
                     }
                 } catch (e: Throwable) {
-                    project.logWarning("${project.name}: error when add proguard file ${element.name}")
-                    return
+                    project.throwException(PLUGIN_CONFIG,"error when add proguard file ${element.name}")
                 }
             }
         }

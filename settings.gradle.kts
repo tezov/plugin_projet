@@ -32,7 +32,7 @@ buildscript {
 }
 
 //plugins {
-//    id("com.tezov.plugin_project.catalog") version "1.0.6" apply true // uncomment to test plugin project demo
+//    id("com.tezov.plugin_project.catalog") version "1.0.7" apply true // uncomment to test plugin project demo
 //}
 
 dependencyResolutionManagement {

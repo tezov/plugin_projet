@@ -2,6 +2,7 @@ package com.tezov.plugin_project.config
 
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
+import com.tezov.plugin_project.Logger
 import com.tezov.plugin_project.Logger.throwException
 import com.tezov.plugin_project.VersionCheck
 import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_PLUGIN_ID
@@ -19,8 +20,8 @@ class ProjectConfigPlugin : Plugin<Project> {
     }
 
     override fun apply(project: Project) {
-        VersionCheck.gradle(project, CONFIG_PLUGIN_ID)
-        VersionCheck.androidClasspath(project, CATALOG_PLUGIN_ID)
+        VersionCheck.gradle(project, Logger.PLUGIN_CONFIG, CONFIG_PLUGIN_ID)
+        VersionCheck.androidClasspath(project, Logger.PLUGIN_CONFIG, CATALOG_PLUGIN_ID)
         project.extensions.findByName(ANDROID_EXTENSION_NAME)?.let {
             when(it){
                 is ApplicationExtension -> {
@@ -30,11 +31,11 @@ class ProjectConfigPlugin : Plugin<Project> {
                     project.extensions.create(CONFIG_EXTENSION_NAME, ExtensionLib::class.java)
                 }
                 else -> {
-                    project.throwException("Android plugin extension unknown type ${it::class.java.name}")
+                    project.throwException(Logger.PLUGIN_CONFIG,"android plugin extension unknown type ${it::class.java.name}")
                 }
             }
         } ?: kotlin.run {
-            project.throwException("Android plugin not found, $CONFIG_PLUGIN_ID need Android plugin applied")
+            project.throwException(Logger.PLUGIN_CONFIG,"android plugin not found, $CONFIG_PLUGIN_ID need Android plugin applied")
         }
     }
 

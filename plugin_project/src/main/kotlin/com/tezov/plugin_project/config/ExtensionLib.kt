@@ -1,6 +1,8 @@
 package com.tezov.plugin_project.config
 
 import com.android.build.api.dsl.LibraryExtension
+import com.tezov.plugin_project.Logger
+import com.tezov.plugin_project.Logger.PLUGIN_CONFIG
 import com.tezov.plugin_project.Logger.throwException
 import com.tezov.plugin_project.PropertyDelegate
 import com.tezov.plugin_project.config.ProjectConfigPlugin.Companion.ANDROID_EXTENSION_NAME
@@ -46,17 +48,17 @@ open class ExtensionLib @Inject constructor(
     val nameSpace get() = findConfigExtensionApp()?.let {
         kotlin.runCatching { common.nameSpace(it, false) }.getOrNull()
     } ?: run {
-        project.throwException("nameSpace is not ready yet")
+        project.throwException(PLUGIN_CONFIG,"nameSpace is not ready yet")
     }
     val applicationId get() = findConfigExtensionApp()?.let {
         kotlin.runCatching { common.applicationId(it, false) }.getOrNull()
     } ?: run {
-        project.throwException("applicationId is not ready yet")
+        project.throwException(PLUGIN_CONFIG, "applicationId is not ready yet")
     }
     val packageName get() = findConfigExtensionApp()?.let {
         kotlin.runCatching { common.packageName(it) }.getOrNull()
     } ?: run {
-        project.throwException("packageName is not ready yet")
+        project.throwException(PLUGIN_CONFIG,"packageName is not ready yet")
     }
 
     internal fun initCurrentBuildType(graphTasks: List<Task>) {
@@ -89,10 +91,10 @@ open class ExtensionLib @Inject constructor(
 
     fun configureAndroidPlugin() {
         val androidExtensionLib = (project.extensions.findByName(ANDROID_EXTENSION_NAME) as? LibraryExtension) ?: kotlin.run {
-            project.throwException("Android plugin library not found")
+            project.throwException(PLUGIN_CONFIG,"android plugin library not found")
         }
         val configExtensionApp = findConfigExtensionApp()?: kotlin.run {
-            project.throwException("The tezov plugin config must be applied to the app module. Else you can not use it on the lib modules.")
+            project.throwException(PLUGIN_CONFIG,"must be applied to the app module. Else you can not use it on the lib modules.")
         }
         ConfigureAndroidLib(
             project = project,

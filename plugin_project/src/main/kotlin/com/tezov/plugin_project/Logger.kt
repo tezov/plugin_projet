@@ -5,31 +5,24 @@ import org.gradle.api.Project
 
 object Logger {
 
-    internal fun Project.logInfo(data: String) {
-        "${project.name}: $data".let {
-            if(logger.isInfoEnabled) logger.info(it)
-            else println(it)
-        }
+    @JvmInline
+    value class PluginType(val value: String)
+
+    val PLUGIN_CONFIG = PluginType("Tezov config plugin")
+    val PLUGIN_CATALOG = PluginType("Tezov catalog plugin")
+
+    internal fun Project.log(plugin:PluginType, data: String) {
+        val message = "${plugin.value}: ${project.name}: $data"
+        if(logger.isInfoEnabled) logger.info(message)
+        else println(message)
     }
 
-    internal fun Project.logError(data: String) {
-        "${project.name}: $data".let {
-            if(logger.isErrorEnabled) logger.info(it)
-            else println(it)
-        }
+    internal fun Project.throwException(plugin:PluginType, data: String): Nothing {
+        throw GradleException("${plugin.value}: ${project.name}: $data")
     }
 
-    internal fun Project.logWarning(data: String) {
-        "${project.name}: $data".let {
-            if(logger.isWarnEnabled) logger.info(it)
-            else println(it)
-        }
-    }
-
-    internal fun Project.throwException(data: String): Nothing {
-        "${project.name}: $data".let {
-            throw GradleException(it)
-        }
+    internal fun throwException(plugin:PluginType, data: String): Nothing {
+        throw GradleException("${plugin.value}: $data")
     }
 
 }

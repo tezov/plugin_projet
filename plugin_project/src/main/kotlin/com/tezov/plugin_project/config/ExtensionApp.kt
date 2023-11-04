@@ -1,8 +1,8 @@
 package com.tezov.plugin_project.config
 
 import com.android.build.api.dsl.ApplicationExtension
-import com.tezov.plugin_project.Logger.logError
-import com.tezov.plugin_project.Logger.logWarning
+import com.tezov.plugin_project.Logger
+import com.tezov.plugin_project.Logger.PLUGIN_CONFIG
 import com.tezov.plugin_project.Logger.throwException
 import com.tezov.plugin_project.PropertyDelegate
 import com.tezov.plugin_project.config.ProjectConfigPlugin.Companion.ANDROID_EXTENSION_NAME
@@ -58,7 +58,7 @@ open class ExtensionApp @Inject constructor(
                 if (beta != null) notNull++
                 if (rc != null) notNull++
                 if (notNull > 1) {
-                    project.logError("tezovConfig: can't be alpha, beta and rc at the same time")
+                    project.throwException(PLUGIN_CONFIG,"can't be alpha, beta and rc at the same time")
                 }
                 when {
                     alpha != null -> "$it-alpha.${alpha}"
@@ -94,13 +94,13 @@ open class ExtensionApp @Inject constructor(
     val lint = factory.newInstance(Lint::class.java)
 
     internal val nameSpace get() = kotlin.runCatching { common.nameSpace(this, true) }.getOrNull() ?: run {
-        project.throwException("nameSpace is not ready yet")
+        project.throwException(PLUGIN_CONFIG,"nameSpace is not ready yet")
     }
     val applicationId get() = kotlin.runCatching { common.applicationId(this, true) }.getOrNull() ?: run {
-        project.throwException("applicationId is not ready yet")
+        project.throwException(PLUGIN_CONFIG,"applicationId is not ready yet")
     }
     val packageName get() = kotlin.runCatching { common.packageName(this) }.getOrNull() ?: run {
-        project.throwException("packageName is not ready yet")
+        project.throwException(PLUGIN_CONFIG,"packageName is not ready yet")
     }
 
     internal fun initCurrentBuildType(graphTasks: List<Task>) {
@@ -141,7 +141,7 @@ open class ExtensionApp @Inject constructor(
 
     fun configureAndroidPlugin() {
         val androidExtensionApp = (project.extensions.findByName(ANDROID_EXTENSION_NAME) as? ApplicationExtension) ?: kotlin.run {
-            project.throwException("Android plugin application not found")
+            project.throwException(PLUGIN_CONFIG,"android plugin application not found")
         }
         ConfigureAndroidApp(
             project = project,

@@ -1,6 +1,6 @@
 package com.tezov.plugin_project
 
-import com.tezov.plugin_project.Logger.logInfo
+import com.tezov.plugin_project.Logger.log
 import com.tezov.plugin_project.config.ProjectConfigPlugin.Companion.ANDROID_PLUGIN_CLASSPATH
 import org.gradle.api.Project
 import org.gradle.util.GradleVersion
@@ -14,16 +14,16 @@ object VersionCheck {
 
     private var androidPluginCurrentVersion:GradleVersion? = null
 
-    fun gradle(project: Project, pluginName: String) {
+    fun gradle(project: Project, pluginType: Logger.PluginType, pluginId: String) {
         if (GradleVersion.current() < MIN_VERSION_GRADLE) {
-            project.logInfo(
-                "${project.name}: gradle ${MIN_VERSION_GRADLE.version} or greater is required by $pluginName."
+            project.log(
+                pluginType, "gradle ${MIN_VERSION_GRADLE.version} or greater is required by $pluginId."
             )
             return
         }
     }
 
-    fun androidClasspath(project: Project, pluginName: String) {
+    fun androidClasspath(project: Project, pluginType: Logger.PluginType, pluginId: String) {
         synchronized(VersionCheck){
             if(androidPluginCurrentVersion == null){
                 val settingsGradle = File(project.rootDir, "settings.gradle.kts")
@@ -43,12 +43,12 @@ object VersionCheck {
             }
             androidPluginCurrentVersion?.let {
                 if (it < MIN_VERSION_ANDROID) {
-                    project.logInfo(
-                        "${project.name}: android classpath ${MIN_VERSION_ANDROID.version} or greater is required by $pluginName.")
+                    project.log(
+                        pluginType, "android classpath ${MIN_VERSION_ANDROID.version} or greater is required by $pluginId.")
                 }
             } ?: kotlin.run {
-                project.logInfo(
-                    "${project.name}: failed to check android classpath version in settings.gradle.kts. Plugin $pluginName required min version $${MIN_VERSION_ANDROID.version}"
+                project.log(
+                    pluginType, "failed to check android classpath version in settings.gradle.kts. Plugin $pluginId required min version $${MIN_VERSION_ANDROID.version}"
                 )
             }
         }

@@ -1,22 +1,16 @@
 package com.tezov.plugin_project.catalog
 
-import com.tezov.plugin_project.Logger.logInfo
+import com.tezov.plugin_project.Logger
+import com.tezov.plugin_project.Logger.log
 import com.tezov.plugin_project.Logger.throwException
-import com.tezov.plugin_project.PropertyDelegate
 import com.tezov.plugin_project.catalog.CatalogMap.Companion.DEFAULT_THROW
 import com.tezov.plugin_project.catalog.CatalogMap.Companion.KEY_SEPARATOR
-import com.tezov.plugin_project.catalog.CatalogProjectExtension.FileFormat.Companion.format
 import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_EXTENSION_NAME
 import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_PLUGIN_ID
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
-import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.initialization.Settings
-import org.gradle.kotlin.dsl.configure
-import java.net.URL
 import javax.inject.Inject
-import java.nio.file.Path
-
 
 open class CatalogScope internal constructor(
     private val project: Project,
@@ -130,7 +124,7 @@ open class CatalogScope internal constructor(
                         ))
                     }.map { it.moduleVersion.id.version.lowercase() }.maxByOrNull { it }?.let {
                         if (it != dependencyVersion) {
-                            project.logInfo("${key.absolute()}: can be updated from $dependencyVersion to $it")
+                            project.log(Logger.PLUGIN_CATALOG,"${key.absolute()}: can be updated from $dependencyVersion to $it")
                         }
                     }
                 }
@@ -142,79 +136,19 @@ open class CatalogScope internal constructor(
 
 open class CatalogProjectExtension @Inject constructor(
     internal val project: Project,
+    settings: Settings,
+    sourceCatalog:String,
 ) : CatalogScope(project = project, keyBase = "") {
 
-    interface CatalogFile {
-        val format: FileFormat
-        val data: String
-    }
-
-    enum class FileFormat(val extension: String) {
-        Json("json"), Yaml("yaml"), Toml("toml");
-
-        companion object {
-
-            fun throwExceptionUnsupportedFormat(project: Project, message: String): Nothing =
-                project.throwException("$message Only .json / .yaml / .toml are supported")
-
-            inline val String.extension get() = substringAfterLast('.', "")
-
-            inline val String.format
-                get() = FileFormat.values().find { it.extension == extension }
-        }
-    }
-
-    var catalogFile by PropertyDelegate<CatalogFile?> { null }
-    var catalogType by PropertyDelegate<FileFormat?> { null }
-
-    fun catalogFromFile(path: String) = catalogFromFile(
-        path = Path.of(path)
-    )
-
-    fun catalogFromFile(path: Path) = object : CatalogFile {
-        override val format: FileFormat
-            get() = path.toString().format
-                ?: FileFormat.throwExceptionUnsupportedFormat(project, "Couldn't resolve file format $path")
-
-        override val data: String
-            get() = path.toFile().also {
-                if (!it.exists() || !it.isFile) {
-                    project.throwException("catalog file not found")
-                }
-            }.readText()
-    }
-
-    fun catalogFromUrl(href: String) = catalogFromUrl(
-        href = URL(href)
-    )
-
-    fun catalogFromUrl(href: URL) = object : CatalogFile {
-        override val format: FileFormat
-            get() = href.path.format
-            ?: FileFormat.throwExceptionUnsupportedFormat(project, "Couldn't resolve file format $href")
-
-        override val data: String
-            get() = href.readText()
-    }
-
-    fun catalogFromString(data: String, format: FileFormat) = object : CatalogFile {
-        override val format: FileFormat get() = format
-        override val data: String
-            get() = data
-    }
-
-    fun configureProjects() {
-        buildRawCatalog()
+    init {
+        buildCatalog(sourceCatalog = sourceCatalog)
         applyProjectsPlugin()
     }
 
-    private fun buildRawCatalog() {
-        val uri = catalogFile ?: run {
-            project.throwException("catalog path is null")
-        }
+    private fun buildCatalog(sourceCatalog:String) {
         catalog = CatalogMap(
             extension = this,
-            uri = uri,
+            catalogPointer = CatalogPointer.build(project = project, from = sourceCatalog),
         )
     }
 
@@ -226,7 +160,7 @@ open class CatalogProjectExtension @Inject constructor(
             }.getOrNull()?.let {
                 it.catalog = catalog
             } ?: run {
-                project.throwException("catalog plugin not successfully apply to ${project.name}")
+                project.throwException(Logger.PLUGIN_CATALOG,"catalog plugin not successfully apply to ${project.name}")
             }
             stringListOrNull(key = module.name)?.forEach { plugin ->
                 module.plugins.apply(plugin)

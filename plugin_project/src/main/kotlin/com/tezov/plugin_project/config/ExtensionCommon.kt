@@ -1,6 +1,8 @@
 package com.tezov.plugin_project.config
 
-import com.tezov.plugin_project.Logger.logError
+import com.tezov.plugin_project.Logger
+import com.tezov.plugin_project.Logger.PLUGIN_CONFIG
+import com.tezov.plugin_project.Logger.throwException
 import org.gradle.api.Project
 import org.gradle.api.Task
 
@@ -40,21 +42,21 @@ internal class ExtensionCommon(
     var beforeVariant: ((buildType: BuildType) -> Unit)? = null
         set(value) {
             field?.let {
-                project.logError("beforeVariant can be used only once")
+                project.throwException(PLUGIN_CONFIG,"beforeVariant can be used only once")
             }
             field = value
         }
     var whenEvaluated: ((buildType: BuildType) -> Unit)? = null
         set(value) {
             field?.let {
-                project.logError("whenEvaluated can be used only once")
+                project.throwException(PLUGIN_CONFIG,"whenEvaluated can be used only once")
             }
             field = value
         }
     var whenReady: ((buildType: BuildType) -> Unit)? = null
         set(value) {
             field?.let {
-                project.logError("whenReady can be used only once")
+                project.throwException(PLUGIN_CONFIG,"whenReady can be used only once")
             }
             field = value
         }
@@ -65,7 +67,7 @@ internal class ExtensionCommon(
         val taskPreReleaseBuild =
             graphTasks.find { task -> task.name == BuildType.RELEASE.preBuildName() }
         if (taskPreDebugBuild != null && taskPreReleaseBuild != null) {
-            project.logError("Debug and Release task found...")
+            project.throwException(PLUGIN_CONFIG,"debug and release task found...")
         }
         return when {
             taskPreDebugBuild != null -> BuildType.DEBUG

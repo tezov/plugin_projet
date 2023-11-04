@@ -1,9 +1,10 @@
 package com.tezov.plugin_project.catalog
 
-import com.tezov.plugin_project.Logger.logError
+import com.tezov.plugin_project.Logger.PLUGIN_CATALOG
 import com.tezov.plugin_project.Logger.throwException
-import com.tezov.plugin_project.catalog.CatalogProjectExtension.FileFormat.Companion.format
-import com.tezov.plugin_project.catalog.CatalogProjectExtension.FileFormat.Companion.throwExceptionUnsupportedFormat
+import com.tezov.plugin_project.catalog.CatalogPointer.Type
+import com.tezov.plugin_project.catalog.CatalogPointer.Type.Companion.schemeOrNull
+import com.tezov.plugin_project.catalog.CatalogPointer.Type.Companion.substringAfter
 import org.gradle.api.JavaVersion
 import java.net.URL
 import java.nio.file.Path
@@ -11,18 +12,17 @@ import kotlin.io.path.Path
 
 internal class CatalogMap(
     private val extension: CatalogProjectExtension,
-    uri: CatalogProjectExtension.CatalogFile,
+    catalogPointer: CatalogPointer,
 ) {
 
     companion object {
         const val PLACE_HOLDER_START = '$'
-        val PLACE_HOLDER_REGEX = Regex("""(\$\{(.*?)\})""")
-        val BACK_TOKEN_REGEX = Regex("^(\\.\\./)*\\.\\.$")
+        val PLACE_HOLDER_REGEX = Regex("(\\$\\{(.*?)\\})")
 
-        const val PLACE_HOLDER_FILE_START = "file://"
-        const val PLACE_HOLDER_URL_START = "url://"
-        const val PATH_BACK_TOKEN = "../"
         const val PATH_ROOT_TOKEN = "."
+
+        const val PATH_BACK_TOKEN = "../"
+        val BACK_TOKEN_REGEX = Regex("^(\\.\\./)*\\.\\.$")
 
         const val KEY_SEPARATOR = '.'
         const val ARRAY_SEPARATOR = ','
@@ -36,7 +36,7 @@ internal class CatalogMap(
     private val catalog: MutableMap<String, String>
 
     init {
-        catalog = CatalogReader.read(uri).toMutableMap()
+        catalog = CatalogReader.read(catalogPointer).toMutableMap()
         placeHolderFileReplace(catalog)
         placeHolderValueReplaceAll(catalog)
     }
@@ -67,90 +67,77 @@ internal class CatalogMap(
         value: String
     ): Map<String, String>? {
         if (!value.startsWith(PLACE_HOLDER_START)) return null
-        val path = PLACE_HOLDER_REGEX.find(value)?.let {
-            if (it.groups.size >= 3) {
-                it.groups[2]?.value
-            } else null
-        } ?: return null
-        val uri = when {
-            path.contains(PLACE_HOLDER_FILE_START) -> {
-                placeHolderFileRetrieveUriFromPath(
-                    key = key,
-                    value = value,
-                    path = path.replaceFirst(PLACE_HOLDER_FILE_START, "")
-                )
-            }
+        val placeHolder = PLACE_HOLDER_REGEX.find(value)?.let {
+            if (it.groups.size >= 3) it.groups[2]?.value else null
+        }
+        return placeHolder?.schemeOrNull?.let { type ->
+            val catalogPointer = when (type) {
+                Type.File -> {
+                    placeHolderFileRetrieveFromPath(
+                        key = key,
+                        value = value,
+                        path = placeHolder.substringAfter(type)
+                    )
+                }
 
-            path.contains(PLACE_HOLDER_URL_START) -> {
-                placeHolderFileRetrieveUriFromUrl(
-                    key = key,
-                    value = value,
-                    path = path.replaceFirst(PLACE_HOLDER_URL_START, "")
-                )
+                Type.Url -> {
+                    placeHolderFileRetrieveFromUrl(
+                        key = key,
+                        value = value,
+                        path = placeHolder.substringAfter(type)
+                    )
+                }
             }
-
-            else -> null
-        } ?: return null
-        return CatalogReader.read(uri)
+            return CatalogReader.read(catalogPointer)
+        }
     }
 
-    private fun placeHolderFileRetrieveUriFromPath(
+    private fun placeHolderFileRetrieveFromPath(
         key: String,
         value: String,
         path: String,
-    ): CatalogProjectExtension.CatalogFile {
-        val authority = path.substringBefore(FILE_SEPARATOR, "")
+    ): CatalogPointer {
+        val authority = path.substringBefore(FILE_SEPARATOR)
         if (authority.isEmpty()) {
-            extension.project.logError("Module name (Authority) or '../' (back token) not found in file $value for key $key")
+            extension.project.throwException(PLUGIN_CATALOG,"module name (Authority) or '../' (back token) not found in file $value for key $key")
         }
         val absolutePath: Path = when {
             authority == PATH_ROOT_TOKEN -> {
-                Path(extension.project.rootDir.path, path.replaceFirst(authority, ""))
+                Path(extension.project.rootDir.path, path.substringAfter(authority))
             }
             BACK_TOKEN_REGEX.matches(authority) -> {
                 val backTokenCount = (authority.length / PATH_BACK_TOKEN.length) + 1
                 var root = extension.project.rootDir.toPath()
                 (0 until backTokenCount).forEach { _ -> root = root.parent }
-                Path(root.toString(), path.replaceFirst(authority, ""))
+                Path(root.toString(), path.substringAfter(authority))
             }
+
             else -> {
                 val project = extension.project.allprojects.find {
                     it.name == authority
                 } ?: run {
-                    extension.project.throwException("Module $authority not found in all project $value for key $key")
+                    extension.project.throwException(PLUGIN_CATALOG,"module $authority (Authority) not found in all project $value for key $key")
                 }
-                Path(project.projectDir.path, path.replaceFirst(authority, ""))
+                Path(project.projectDir.path, path.substringAfter(authority))
             }
         }
-        return object : CatalogProjectExtension.CatalogFile {
-            override val format: CatalogProjectExtension.FileFormat
-                get() = absolutePath.toString().format
-                    ?: throwExceptionUnsupportedFormat(
-                        extension.project,
-                        "Couldn't resolve file format $path for key $key."
-                    )
-            override val data: String
-                get() = absolutePath.toFile().also {
-                    if (!it.exists() || !it.isFile) {
-                        extension.project.throwException("catalog file not found $it from $key")
-                    }
-                }.readText()
+        return CatalogPointer.build(absolutePath).also {
+            it.error?.let { error ->
+                extension.project.throwException(PLUGIN_CATALOG,"$error $value for key $key.")
+            }
         }
     }
 
-    private fun placeHolderFileRetrieveUriFromUrl(
+    private fun placeHolderFileRetrieveFromUrl(
         key: String,
         value: String,
         path: String,
-    ) = object : CatalogProjectExtension.CatalogFile {
-        override val format: CatalogProjectExtension.FileFormat
-            get() = path.format
-                ?: throwExceptionUnsupportedFormat(
-                    extension.project,
-                    "Couldn't resolve url format $value for key $key."
-                )
-        override val data: String
-            get() = URL(path).readText()
+    ): CatalogPointer {
+        return CatalogPointer.build(URL(path)).also {
+            it.error?.let { error ->
+                extension.project.throwException(PLUGIN_CATALOG,"$error $value for key $key.")
+            }
+        }
     }
 
     private fun placeHolderValueReplaceAll(catalog: MutableMap<String, String>) {
@@ -203,7 +190,7 @@ internal class CatalogMap(
                     if (placeHolderValue != null) break
                 } while (keys.isNotEmpty())
                 placeHolderValue ?: kotlin.run {
-                    project.throwException("placeholder key $placeHolderKey not found for key $key with value $value")
+                    project.throwException(PLUGIN_CATALOG,"placeholder key $placeHolderKey not found for key $key with value $value")
                 }
                 //replace placeholder by placeholder value in value
                 it.groups[1]?.range?.let {

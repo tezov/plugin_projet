@@ -4,14 +4,18 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.toml.TomlFactory
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import com.tezov.plugin_project.Logger
+import com.tezov.plugin_project.Logger.throwException
 import com.tezov.plugin_project.catalog.CatalogMap.Companion.ARRAY_SEPARATOR
+import com.tezov.plugin_project.catalog.CatalogPointer.Format
 
 internal object CatalogReader {
 
-    fun read(uri: CatalogProjectExtension.CatalogFile) = when (uri.format) {
-        CatalogProjectExtension.FileFormat.Json -> json(uri = uri)
-        CatalogProjectExtension.FileFormat.Yaml -> yaml(uri = uri)
-        CatalogProjectExtension.FileFormat.Toml -> toml(uri = uri)
+    fun read(catalogPointer: CatalogPointer) = when (catalogPointer.format) {
+        Format.Json -> json(catalogPointer = catalogPointer)
+        Format.Yaml -> yaml(catalogPointer = catalogPointer)
+        Format.Toml -> toml(catalogPointer = catalogPointer)
+        else -> throwException(Logger.PLUGIN_CATALOG, "internal error, catalogPointer supplied with null format. Should not be possible")
     }
 
     private fun Map<String, Any>.flattenMap(
@@ -33,12 +37,12 @@ internal object CatalogReader {
     }
 
     private fun json(
-        uri: CatalogProjectExtension.CatalogFile,
+        catalogPointer: CatalogPointer,
     ): Map<String, String> {
         val objectMapper = ObjectMapper()
         objectMapper.findAndRegisterModules()
         val inputMap = objectMapper.readValue(
-            uri.data,
+            catalogPointer.data ?: "",
             object : TypeReference<Map<String, Any>>() {}
         )
         val rawCatalog = mutableMapOf<String, String>()
@@ -47,12 +51,12 @@ internal object CatalogReader {
     }
 
     private fun yaml(
-        uri: CatalogProjectExtension.CatalogFile,
+        catalogPointer: CatalogPointer,
     ): Map<String, String> {
         val objectMapper = ObjectMapper(YAMLFactory())
         objectMapper.findAndRegisterModules()
         val inputMap = objectMapper.readValue(
-            uri.data,
+            catalogPointer.data ?: "",
             object : TypeReference<Map<String, Any>>() {}
         )
         val rawCatalog = mutableMapOf<String, String>()
@@ -61,12 +65,12 @@ internal object CatalogReader {
     }
 
     private fun toml(
-        uri: CatalogProjectExtension.CatalogFile,
+        catalogPointer: CatalogPointer,
     ): Map<String, String> {
         val objectMapper = ObjectMapper(TomlFactory())
         objectMapper.findAndRegisterModules()
         val inputMap = objectMapper.readValue(
-            uri.data,
+            catalogPointer.data ?: "",
             object : TypeReference<Map<String, Any>>() {}
         )
         val rawCatalog = mutableMapOf<String, String>()

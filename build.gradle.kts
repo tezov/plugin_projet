@@ -1,15 +1,6 @@
-//// uncomment to try plugin project demo
+//// uncomment to try plugin project demo version check
 //tezovCatalog {
-//
-//    catalogFile = catalogFromFile("${project.projectDir}/tezov.catalog.yaml")
-////    catalogFile = catalogFromFile("${project.projectDir}/tezov.catalog.json")
-////    catalogFile = catalogFromFile("${project.projectDir}/tezov.catalog.toml")
-//
-////    catalogFile = catalogFromUrl("https://www.tezov.com/tezov.catalog.json")
-//
-//
-//    configureProjects()
-//
+
 //    val ignore_alpha = false
 //    val ignore_beta = false
 //    val ignore_rc = false

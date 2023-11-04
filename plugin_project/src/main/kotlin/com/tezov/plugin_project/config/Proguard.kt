@@ -20,9 +20,9 @@ object Proguard {
         operator fun invoke(placeHolders: Map<String, String>? = null): InputStream? {
             return try {
                 val inputStream = javaClass.classLoader.getResourceAsStream(path)
-                placeHolders?.let{ placeHolders ->
-                    val text = inputStream.bufferedReader().use { it.readText() }
-                    val finalText = replacePlaceholders(text, placeHolders)
+                placeHolders?.let{
+                    val text = inputStream?.bufferedReader().use { it?.readText() }
+                    val finalText = replacePlaceholders(text ?: "", placeHolders)
                     ByteArrayInputStream(finalText.toByteArray(Charsets.UTF_8))
                 } ?: inputStream
             } catch (e: Throwable) {
