@@ -1,4 +1,0 @@
--repackageclasses '${repackageName}'
--allowaccessmodification
--renamesourcefileattribute SourceFile
--printmapping mapping.txt
