@@ -30,7 +30,7 @@ buildscript {
 }
 
 plugins {
-    id("com.tezov.plugin_project.catalog") version "1.0.7-alpha.2" apply true
+    id("com.tezov.plugin_project.catalog") version "1.0.8" apply true
 }
 
 dependencyResolutionManagement {

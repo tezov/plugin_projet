@@ -6,12 +6,13 @@ import com.tezov.plugin_project.catalog.CatalogPointer.Type
 import com.tezov.plugin_project.catalog.CatalogPointer.Type.Companion.schemeOrNull
 import com.tezov.plugin_project.catalog.CatalogPointer.Type.Companion.substringAfter
 import org.gradle.api.JavaVersion
+import org.gradle.api.initialization.Settings
 import java.net.URL
 import java.nio.file.Path
 import kotlin.io.path.Path
 
 internal class CatalogMap(
-    private val extension: CatalogProjectExtension,
+    private val settings: Settings,
     catalogPointer: CatalogPointer,
 ) {
 
@@ -97,32 +98,31 @@ internal class CatalogMap(
         path: String,
     ): CatalogPointer {
         val authority = path.substringBefore(FILE_SEPARATOR)
-        if (authority.isEmpty()) {
-            extension.project.throwException(PLUGIN_CATALOG,"module name (Authority) or '../' (back token) not found in file $value for key $key")
-        }
         val absolutePath: Path = when {
             authority == PATH_ROOT_TOKEN -> {
-                Path(extension.project.rootDir.path, path.substringAfter(authority))
+                Path(settings.rootDir.path, path.substringAfter(authority))
             }
             BACK_TOKEN_REGEX.matches(authority) -> {
                 val backTokenCount = (authority.length / PATH_BACK_TOKEN.length) + 1
-                var root = extension.project.rootDir.toPath()
+                var root = settings.rootDir.toPath()
                 (0 until backTokenCount).forEach { _ -> root = root.parent }
                 Path(root.toString(), path.substringAfter(authority))
             }
-
             else -> {
-                val project = extension.project.allprojects.find {
-                    it.name == authority
-                } ?: run {
-                    extension.project.throwException(PLUGIN_CATALOG,"module $authority (Authority) not found in all project $value for key $key")
-                }
-                Path(project.projectDir.path, path.substringAfter(authority))
+                PLUGIN_CATALOG.throwException(settings,"back token '../' or root token './' not found in file $value for key $key")
             }
+//            else -> {
+//                val project = extension.project.allprojects.find {
+//                    it.name == authority
+//                } ?: run {
+//                    PLUGIN_CATALOG.throwException(extension.settings,"module $authority (Authority) not found in all project $value for key $key")
+//                }
+//                Path(project.projectDir.path, path.substringAfter(authority))
+//            }
         }
         return CatalogPointer.build(absolutePath).also {
             it.error?.let { error ->
-                extension.project.throwException(PLUGIN_CATALOG,"$error $value for key $key.")
+                PLUGIN_CATALOG.throwException(settings,"$error $value for key $key.")
             }
         }
     }
@@ -134,7 +134,7 @@ internal class CatalogMap(
     ): CatalogPointer {
         return CatalogPointer.build(URL(path)).also {
             it.error?.let { error ->
-                extension.project.throwException(PLUGIN_CATALOG,"$error $value for key $key.")
+                PLUGIN_CATALOG.throwException(settings,"$error $value for key $key.")
             }
         }
     }
@@ -160,48 +160,46 @@ internal class CatalogMap(
         value: String,
         catalog: Map<String, String>
     ): String {
-        with(extension) {
-            val valueBuilder = StringBuilder(value)
-            //multiple placeholder can be in value
-            var indexOffset = 0
-            for (it in PLACE_HOLDER_REGEX.findAll(value)) {
-                if (it.groups.size < 3) continue
-                //find first valid placeholder value from inside to outside
-                val placeHolderKey = it.groups[2]?.value ?: continue
-                val keys = key.split(KEY_SEPARATOR).toMutableList()
-                var placeHolderValue: String? = null
-                do {
-                    keys.removeLast()
-                    val placeHolderKeyRebuilt = StringBuilder().apply {
-                        append(keys.joinToString(KEY_SEPARATOR.toString()))
-                        if (isNotEmpty()) append(KEY_SEPARATOR)
-                        append(placeHolderKey)
-                    }.toString()
-                    catalog[placeHolderKeyRebuilt]?.let {
-                        placeHolderValue =
-                            placeHolderValueReplaceAllRecurse(
-                                key = placeHolderKeyRebuilt,
-                                value = it,
-                                catalog = catalog
-                            )
-                    }
-                    if (placeHolderValue != null) break
-                } while (keys.isNotEmpty())
-                placeHolderValue ?: kotlin.run {
-                    project.throwException(PLUGIN_CATALOG,"placeholder key $placeHolderKey not found for key $key with value $value")
+        val valueBuilder = StringBuilder(value)
+        //multiple placeholder can be in value
+        var indexOffset = 0
+        for (it in PLACE_HOLDER_REGEX.findAll(value)) {
+            if (it.groups.size < 3) continue
+            //find first valid placeholder value from inside to outside
+            val placeHolderKey = it.groups[2]?.value ?: continue
+            val keys = key.split(KEY_SEPARATOR).toMutableList()
+            var placeHolderValue: String? = null
+            do {
+                keys.removeLast()
+                val placeHolderKeyRebuilt = StringBuilder().apply {
+                    append(keys.joinToString(KEY_SEPARATOR.toString()))
+                    if (isNotEmpty()) append(KEY_SEPARATOR)
+                    append(placeHolderKey)
+                }.toString()
+                catalog[placeHolderKeyRebuilt]?.let {
+                    placeHolderValue =
+                        placeHolderValueReplaceAllRecurse(
+                            key = placeHolderKeyRebuilt,
+                            value = it,
+                            catalog = catalog
+                        )
                 }
-                //replace placeholder by placeholder value in value
-                it.groups[1]?.range?.let {
-                    valueBuilder.replace(
-                        (it.first + indexOffset),
-                        (it.last + indexOffset + 1),
-                        placeHolderValue
-                    )
-                    indexOffset += (placeHolderValue!!.length - it.count())
-                }
+                if (placeHolderValue != null) break
+            } while (keys.isNotEmpty())
+            placeHolderValue ?: kotlin.run {
+                PLUGIN_CATALOG.throwException(settings,"placeholder key $placeHolderKey not found for key $key with value $value")
             }
-            return valueBuilder.toString()
+            //replace placeholder by placeholder value in value
+            it.groups[1]?.range?.let {
+                valueBuilder.replace(
+                    (it.first + indexOffset),
+                    (it.last + indexOffset + 1),
+                    placeHolderValue
+                )
+                indexOffset += (placeHolderValue!!.length - it.count())
+            }
         }
+        return valueBuilder.toString()
     }
 
     val keys get() = catalog.keys

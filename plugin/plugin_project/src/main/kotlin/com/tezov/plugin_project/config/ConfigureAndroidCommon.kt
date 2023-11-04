@@ -121,7 +121,7 @@ internal class ConfigureAndroidCommon(
     ) {
         buildTypes.getByName("release") {
             if (enableDebug) {
-                project.log(PLUGIN_CONFIG,"************** DEBUG IS ACTIVE ON RELEASE **************")
+                PLUGIN_CONFIG.log(project,"************** DEBUG IS ACTIVE ON RELEASE **************")
             }
             protocol.proguardAddAll(this, proguards)
             if (enableDebug) {
@@ -169,7 +169,7 @@ internal class ConfigureAndroidCommon(
                         it.use { input -> input.copyTo(output) }
                     }
                 } catch (e: Throwable) {
-                    project.throwException(PLUGIN_CONFIG,"error when add proguard file ${element.name}")
+                    PLUGIN_CONFIG.throwException(project,"error when add proguard file ${element.name}")
                 }
             }
         }

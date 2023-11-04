@@ -48,17 +48,17 @@ open class ExtensionLib @Inject constructor(
     val nameSpace get() = findConfigExtensionApp()?.let {
         kotlin.runCatching { common.nameSpace(it, false) }.getOrNull()
     } ?: run {
-        project.throwException(PLUGIN_CONFIG,"nameSpace is not ready yet")
+        PLUGIN_CONFIG.throwException(project,"nameSpace is not ready yet")
     }
     val applicationId get() = findConfigExtensionApp()?.let {
         kotlin.runCatching { common.applicationId(it, false) }.getOrNull()
     } ?: run {
-        project.throwException(PLUGIN_CONFIG, "applicationId is not ready yet")
+        PLUGIN_CONFIG.throwException(project, "applicationId is not ready yet")
     }
     val packageName get() = findConfigExtensionApp()?.let {
         kotlin.runCatching { common.packageName(it) }.getOrNull()
     } ?: run {
-        project.throwException(PLUGIN_CONFIG,"packageName is not ready yet")
+        PLUGIN_CONFIG.throwException(project,"packageName is not ready yet")
     }
 
     internal fun initCurrentBuildType(graphTasks: List<Task>) {
@@ -91,10 +91,10 @@ open class ExtensionLib @Inject constructor(
 
     fun configureAndroidPlugin() {
         val androidExtensionLib = (project.extensions.findByName(ANDROID_EXTENSION_NAME) as? LibraryExtension) ?: kotlin.run {
-            project.throwException(PLUGIN_CONFIG,"android plugin library not found")
+            PLUGIN_CONFIG.throwException(project,"android plugin library not found")
         }
         val configExtensionApp = findConfigExtensionApp()?: kotlin.run {
-            project.throwException(PLUGIN_CONFIG,"must be applied to the app module. Else you can not use it on the lib modules.")
+            PLUGIN_CONFIG.throwException(project,"must be applied to the app module. Else you can not use it on the lib modules.")
         }
         ConfigureAndroidLib(
             project = project,

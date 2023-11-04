@@ -1,18 +1,16 @@
 #application package base
 domain = "com.tezov"
-dependencies = "${file://plugin_project_demo/tezov.catalog.dependencies.yaml}"
-#dependencies = "${file://./tezov.catalog.dependencies.yaml}" # same as above
-#dependencies = "${file://../tezov.catalog.dependencies.yaml}" # before root dir project
-#dependencies = "${file://../../tezov.catalog.dependencies.yaml}" # before and again before root dir project
+merge = "${file://./tezov.catalog.dependencies.yaml}"
 
 #Configuration plugin application
+[plugins_apply_to]
 app = [
-  "${plugin.application}",
-  "${plugin.kotlin}",
-  "${plugin.tezov_project_config}"
+  "${plugins.application}",
+  "${plugins.kotlin}",
+  "${plugins.tezov_project_config}"
 ]
 lib = [
-  "${plugin.library}",
-  "${plugin.kotlin}",
-  "${plugin.tezov_project_config}"
+  "${plugins.library}",
+  "${plugins.kotlin}",
+  "${plugins.tezov_project_config}"
 ]

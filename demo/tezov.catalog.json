@@ -1,14 +1,16 @@
 {
   "domain": "com.tezov",
-  "dependencies" : "${file://plugin_project_demo/tezov.catalog.dependencies.yaml}",
-  "app": [
-    "${plugin.application}",
-    "${plugin.kotlin}",
-    "${plugin.tezov_project_config}"
-  ],
-  "lib": [
-    "${plugin.library}",
-    "${plugin.kotlin}",
-    "${plugin.tezov_project_config}"
-  ]
+  "merge" : "${file://./tezov.catalog.dependencies.yaml}",
+  "plugins_apply_to" : {
+    "app": [
+      "${plugins.application}",
+      "${plugins.kotlin}",
+      "${plugins.tezov_project_config}"
+    ],
+    "lib": [
+      "${plugins.library}",
+      "${plugins.kotlin}",
+      "${plugins.tezov_project_config}"
+    ]
+  }
 }

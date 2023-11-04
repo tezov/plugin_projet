@@ -58,7 +58,7 @@ open class ExtensionApp @Inject constructor(
                 if (beta != null) notNull++
                 if (rc != null) notNull++
                 if (notNull > 1) {
-                    project.throwException(PLUGIN_CONFIG,"can't be alpha, beta and rc at the same time")
+                    PLUGIN_CONFIG.throwException(project,"can't be alpha, beta and rc at the same time")
                 }
                 when {
                     alpha != null -> "$it-alpha.${alpha}"
@@ -94,13 +94,13 @@ open class ExtensionApp @Inject constructor(
     val lint = factory.newInstance(Lint::class.java)
 
     internal val nameSpace get() = kotlin.runCatching { common.nameSpace(this, true) }.getOrNull() ?: run {
-        project.throwException(PLUGIN_CONFIG,"nameSpace is not ready yet")
+        PLUGIN_CONFIG.throwException(project,"nameSpace is not ready yet")
     }
     val applicationId get() = kotlin.runCatching { common.applicationId(this, true) }.getOrNull() ?: run {
-        project.throwException(PLUGIN_CONFIG,"applicationId is not ready yet")
+        PLUGIN_CONFIG.throwException(project,"applicationId is not ready yet")
     }
     val packageName get() = kotlin.runCatching { common.packageName(this) }.getOrNull() ?: run {
-        project.throwException(PLUGIN_CONFIG,"packageName is not ready yet")
+        PLUGIN_CONFIG.throwException(project,"packageName is not ready yet")
     }
 
     internal fun initCurrentBuildType(graphTasks: List<Task>) {
@@ -141,7 +141,7 @@ open class ExtensionApp @Inject constructor(
 
     fun configureAndroidPlugin() {
         val androidExtensionApp = (project.extensions.findByName(ANDROID_EXTENSION_NAME) as? ApplicationExtension) ?: kotlin.run {
-            project.throwException(PLUGIN_CONFIG,"android plugin application not found")
+            PLUGIN_CONFIG.throwException(project,"android plugin application not found")
         }
         ConfigureAndroidApp(
             project = project,

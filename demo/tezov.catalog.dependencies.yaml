@@ -1,17 +1,17 @@
 resourcesExcluded:
-- META-INF/DEPENDENCIES
-- META-INF/LICENSE
-- META-INF/LICENSE.txt
-- META-INF/LICENSE.md
-- META-INF/LICENSE-notice.md
-- META-INF/NOTICE
-- META-INF/NOTICE.txt
-- META-INF/NOTICE.md
-- META-INF/ASL2.0
-- META-INF/LGPL2.1
+  - META-INF/DEPENDENCIES
+  - META-INF/LICENSE
+  - META-INF/LICENSE.txt
+  - META-INF/LICENSE.md
+  - META-INF/LICENSE-notice.md
+  - META-INF/NOTICE
+  - META-INF/NOTICE.txt
+  - META-INF/NOTICE.md
+  - META-INF/ASL2.0
+  - META-INF/LGPL2.1
 
 #Configuration versions
-projectVersion :
+projectVersions:
   defaultCompileSdk: 33
   defaultMinCompileSdk: 21
   defaultTargetCompileSdk: ${defaultCompileSdk}
@@ -19,8 +19,10 @@ projectVersion :
   javaTarget: ${javaSource}
   jvmTarget: ${javaSource}
   composeCompiler: 1.4.8
-  
-  dependencies:
+
+#Configuration libraries versions
+versions:
+  runtime:
     core:
       kotlin: 1.10.1
       lifecycle_runtime: 2.6.1
@@ -31,32 +33,33 @@ projectVersion :
       foundation: 1.4.3
       activity: 1.7.2
       ui_preview: 1.4.3
-  
-  dependencies_debug:
+
+  debug:
     compose:
       compose_ui_tooling: 1.4.3
       compose_ui_manifest: 1.4.3
 
-#Configuration dependencies path
-projectPath :
-  dependencies:
+#Configuration libraries coordinates
+libraries:
+  runtime:
     core:
-      kotlin: androidx.core:core-ktx:${projectVersion.dependencies.core.kotlin}
-      lifecycle_runtime: androidx.lifecycle:lifecycle-runtime-ktx:${projectVersion.dependencies.core.lifecycle_runtime}
+      kotlin: androidx.core:core-ktx:${versions.runtime.core.kotlin}
+      lifecycle_runtime: androidx.lifecycle:lifecycle-runtime-ktx:${versions.runtime.core.lifecycle_runtime}
     compose:
-      ui: androidx.compose.ui:ui:${projectVersion.dependencies.compose.ui
-      runtime: androidx.compose.runtime:runtime:${projectVersion.dependencies.compose.runtime}
-      material3: androidx.compose.material3:material3:${projectVersion.dependencies.compose.material3}
-      foundation: androidx.compose.foundation:foundation:${projectVersion.dependencies.compose.foundation}
-      activity: androidx.activity:activity-compose:${projectVersion.dependencies.compose.activity}
-      ui_preview: androidx.compose.ui:ui-tooling-preview:${projectVersion.dependencies.compose.ui_preview}
-  dependencies_debug:
+      ui: androidx.compose.ui:ui:${versions.runtime.compose.ui
+      runtime: androidx.compose.runtime:runtime:${versions.runtime.compose.runtime}
+      material3: androidx.compose.material3:material3:${versions.runtime.compose.material3}
+      foundation: androidx.compose.foundation:foundation:${versions.runtime.compose.foundation}
+      activity: androidx.activity:activity-compose:${versions.runtime.compose.activity}
+      ui_preview: androidx.compose.ui:ui-tooling-preview:${versions.runtime.compose.ui_preview}
+
+  debug:
     compose:
-      compose_ui_tooling: androidx.compose.ui:ui-tooling:${projectVersion.dependencies_debug.compose.compose_ui_tooling}
-      compose_ui_manifest: androidx.compose.ui:ui-test-manifest:${projectVersion.dependencies_debug.compose.compose_ui_manifest}
+      compose_ui_tooling: androidx.compose.ui:ui-tooling:${versions.debug.compose.compose_ui_tooling}
+      compose_ui_manifest: androidx.compose.ui:ui-test-manifest:${versions.debug.compose.compose_ui_manifest}
 
 #Configuration plugins
-plugin:
+plugins:
   android: com.android
   application: ${android}.application
   library: ${android}.library

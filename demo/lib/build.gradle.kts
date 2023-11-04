@@ -13,7 +13,7 @@ tezovConfig {
 
 android {
     tezovCatalog {
-        with("projectVersion") {
+        with("projectVersions") {
             compileSdk = int("defaultCompileSdk")
             compileOptions {
                 sourceCompatibility = javaVersion("javaSource")
@@ -30,10 +30,17 @@ android {
 }
 
 dependencies {
+
+    //Can be use with the gradle catalog way
+    api(libraries.runtime.core.kotlin)
+//    api(libraries.runtime.core.lifecycle_runtime)
+
+    //or can be write with the tezov catalog way
     tezovCatalog {
-        with("projectPath.dependencies.core") {
-            api(string("kotlin"))
+        with("libraries.runtime.core") {
+//            api(string("kotlin"))
             api(string("lifecycle_runtime"))
         }
     }
+
 }

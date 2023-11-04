@@ -7,6 +7,7 @@ import com.tezov.plugin_project.catalog.CatalogPointer.Format.Companion.formatOr
 import com.tezov.plugin_project.catalog.CatalogPointer.Type.Companion.scheme
 import com.tezov.plugin_project.catalog.CatalogPointer.Type.Companion.substringAfter
 import org.gradle.api.Project
+import org.gradle.api.initialization.Settings
 import java.net.URL
 import java.nio.file.Path
 
@@ -25,8 +26,8 @@ interface CatalogPointer {
             inline val String.extension get() = substringAfterLast('.', "")
 
             val String.format
-                get() = formatOrNull ?: throwException(
-                        PLUGIN_CATALOG,"Couldn't resolve the catalog extension for $this. Accepted extensions are (${Format.joinToString()})"
+                get() = formatOrNull ?: PLUGIN_CATALOG.throwException(
+                        "Couldn't resolve the catalog extension for $this. Accepted extensions are (${Format.joinToString()})"
                     )
 
             val String.formatOrNull
@@ -43,8 +44,8 @@ interface CatalogPointer {
         companion object {
 
             val String.scheme
-                get() = schemeOrNull ?: throwException(
-                    PLUGIN_CATALOG,"Couldn't resolve the catalog scheme for $this. Accepted schemes are (${Type.joinToString()})"
+                get() = schemeOrNull ?: PLUGIN_CATALOG.throwException(
+                    "Couldn't resolve the catalog scheme for $this. Accepted schemes are (${Type.joinToString()})"
                 )
 
             val String.schemeOrNull
@@ -62,12 +63,12 @@ interface CatalogPointer {
 
     companion object {
 
-        fun build(project: Project, from: String): CatalogPointer {
+        fun build(settings: Settings, from: String): CatalogPointer {
             val catalog = when (val scheme = from.scheme) {
                 Type.File -> initFromFile(pathString = from.substringAfter(scheme))
                 Type.Url -> initFromUrl(href = from.substringAfter(scheme))
             }
-            catalog.error?.let { project.throwException(PLUGIN_CATALOG, it) }
+            catalog.error?.let { PLUGIN_CATALOG.throwException(settings, it) }
             return catalog
         }
 

@@ -3,6 +3,7 @@ package com.tezov.plugin_project
 import com.tezov.plugin_project.Logger.log
 import com.tezov.plugin_project.config.ProjectConfigPlugin.Companion.ANDROID_PLUGIN_CLASSPATH
 import org.gradle.api.Project
+import org.gradle.api.initialization.Settings
 import org.gradle.util.GradleVersion
 import java.io.File
 
@@ -14,10 +15,19 @@ object VersionCheck {
 
     private var androidPluginCurrentVersion:GradleVersion? = null
 
+    fun gradle(settings: Settings, pluginType: Logger.PluginType, pluginId: String) {
+        if (GradleVersion.current() < MIN_VERSION_GRADLE) {
+            pluginType.log(
+                settings, "gradle ${MIN_VERSION_GRADLE.version} or greater is required by $pluginId."
+            )
+            return
+        }
+    }
+
     fun gradle(project: Project, pluginType: Logger.PluginType, pluginId: String) {
         if (GradleVersion.current() < MIN_VERSION_GRADLE) {
-            project.log(
-                pluginType, "gradle ${MIN_VERSION_GRADLE.version} or greater is required by $pluginId."
+            pluginType.log(
+                project, "gradle ${MIN_VERSION_GRADLE.version} or greater is required by $pluginId."
             )
             return
         }
@@ -43,12 +53,12 @@ object VersionCheck {
             }
             androidPluginCurrentVersion?.let {
                 if (it < MIN_VERSION_ANDROID) {
-                    project.log(
-                        pluginType, "android classpath ${MIN_VERSION_ANDROID.version} or greater is required by $pluginId.")
+                    pluginType.log(
+                        project, "android classpath ${MIN_VERSION_ANDROID.version} or greater is required by $pluginId.")
                 }
             } ?: kotlin.run {
-                project.log(
-                    pluginType, "failed to check android classpath version in settings.gradle.kts. Plugin $pluginId required min version $${MIN_VERSION_ANDROID.version}"
+                pluginType.log(
+                    project, "failed to check android classpath version in settings.gradle.kts. Plugin $pluginId required min version $${MIN_VERSION_ANDROID.version}"
                 )
             }
         }

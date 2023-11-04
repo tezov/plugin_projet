@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.toml.TomlFactory
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.tezov.plugin_project.Logger
+import com.tezov.plugin_project.Logger.PLUGIN_CATALOG
 import com.tezov.plugin_project.Logger.throwException
 import com.tezov.plugin_project.catalog.CatalogMap.Companion.ARRAY_SEPARATOR
 import com.tezov.plugin_project.catalog.CatalogPointer.Format
@@ -15,7 +16,7 @@ internal object CatalogReader {
         Format.Json -> json(catalogPointer = catalogPointer)
         Format.Yaml -> yaml(catalogPointer = catalogPointer)
         Format.Toml -> toml(catalogPointer = catalogPointer)
-        else -> throwException(Logger.PLUGIN_CATALOG, "internal error, catalogPointer supplied with null format. Should not be possible")
+        else -> PLUGIN_CATALOG.throwException("internal error, catalogPointer supplied with null format. Should not be possible")
     }
 
     private fun Map<String, Any>.flattenMap(

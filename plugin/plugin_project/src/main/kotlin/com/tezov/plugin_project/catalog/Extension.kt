@@ -1,15 +1,18 @@
 package com.tezov.plugin_project.catalog
 
 import com.tezov.plugin_project.Logger
+import com.tezov.plugin_project.Logger.PLUGIN_CATALOG
 import com.tezov.plugin_project.Logger.log
 import com.tezov.plugin_project.Logger.throwException
 import com.tezov.plugin_project.catalog.CatalogMap.Companion.DEFAULT_THROW
 import com.tezov.plugin_project.catalog.CatalogMap.Companion.KEY_SEPARATOR
 import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_EXTENSION_NAME
+import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_KEY_PLUGINS_APPLY_TO
 import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_PLUGIN_ID
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.initialization.Settings
+import org.gradle.kotlin.dsl.plugins
 import javax.inject.Inject
 
 open class CatalogScope internal constructor(
@@ -124,7 +127,10 @@ open class CatalogScope internal constructor(
                         ))
                     }.map { it.moduleVersion.id.version.lowercase() }.maxByOrNull { it }?.let {
                         if (it != dependencyVersion) {
-                            project.log(Logger.PLUGIN_CATALOG,"${key.absolute()}: can be updated from $dependencyVersion to $it")
+                            PLUGIN_CATALOG.log(
+                                project,
+                                "${key.absolute()}: can be updated from $dependencyVersion to $it"
+                            )
                         }
                     }
                 }
@@ -134,25 +140,14 @@ open class CatalogScope internal constructor(
     }
 }
 
-open class CatalogProjectExtension @Inject constructor(
+open class CatalogProjectExtension @Inject internal constructor(
     internal val project: Project,
-    settings: Settings,
-    sourceCatalog:String,
+    catalog: CatalogMap,
 ) : CatalogScope(project = project, keyBase = "") {
 
     init {
-        buildCatalog(sourceCatalog = sourceCatalog)
-
-        //println(catalog)
-
+        this.catalog = catalog
         applyProjectsPlugin()
-    }
-
-    private fun buildCatalog(sourceCatalog:String) {
-        catalog = CatalogMap(
-            extension = this,
-            catalogPointer = CatalogPointer.build(project = project, from = sourceCatalog),
-        )
     }
 
     private fun applyProjectsPlugin() {
@@ -163,9 +158,12 @@ open class CatalogProjectExtension @Inject constructor(
             }.getOrNull()?.let {
                 it.catalog = catalog
             } ?: run {
-                project.throwException(Logger.PLUGIN_CATALOG,"catalog plugin not successfully apply to ${project.name}")
+                PLUGIN_CATALOG.throwException(
+                    project,
+                    "catalog plugin not successfully apply to ${project.name}"
+                )
             }
-            stringListOrNull(key = module.name)?.forEach { plugin ->
+            stringListOrNull(key = CATALOG_KEY_PLUGINS_APPLY_TO + KEY_SEPARATOR + module.name)?.forEach { plugin ->
                 module.plugins.apply(plugin)
             }
         }

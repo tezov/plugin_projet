@@ -42,21 +42,21 @@ internal class ExtensionCommon(
     var beforeVariant: ((buildType: BuildType) -> Unit)? = null
         set(value) {
             field?.let {
-                project.throwException(PLUGIN_CONFIG,"beforeVariant can be used only once")
+                PLUGIN_CONFIG.throwException(project,"beforeVariant can be used only once")
             }
             field = value
         }
     var whenEvaluated: ((buildType: BuildType) -> Unit)? = null
         set(value) {
             field?.let {
-                project.throwException(PLUGIN_CONFIG,"whenEvaluated can be used only once")
+                PLUGIN_CONFIG.throwException(project,"whenEvaluated can be used only once")
             }
             field = value
         }
     var whenReady: ((buildType: BuildType) -> Unit)? = null
         set(value) {
             field?.let {
-                project.throwException(PLUGIN_CONFIG,"whenReady can be used only once")
+                PLUGIN_CONFIG.throwException(project,"whenReady can be used only once")
             }
             field = value
         }
@@ -67,7 +67,7 @@ internal class ExtensionCommon(
         val taskPreReleaseBuild =
             graphTasks.find { task -> task.name == BuildType.RELEASE.preBuildName() }
         if (taskPreDebugBuild != null && taskPreReleaseBuild != null) {
-            project.throwException(PLUGIN_CONFIG,"debug and release task found...")
+            PLUGIN_CONFIG.throwException(project,"debug and release task found...")
         }
         return when {
             taskPreDebugBuild != null -> BuildType.DEBUG
