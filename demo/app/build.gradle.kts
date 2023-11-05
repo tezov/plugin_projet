@@ -69,6 +69,8 @@ android {
 dependencies {
     implementation(project(":lib"))
 
+        test.hell
+
     //Can be use with the gradle catalog way
 //    implementation(libraries.runtime.compose.ui)
 //    implementation(libraries.runtime.compose.runtime)

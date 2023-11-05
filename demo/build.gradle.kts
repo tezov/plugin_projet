@@ -37,10 +37,6 @@ myExtension {
 
     }
 
-    innerContainer2
-
-
-
 }
 
 
