@@ -32,7 +32,7 @@ buildscript {
 }
 
 plugins {
-    id("com.tezov.plugin_project.catalog") version "1.0.8-1" apply true
+    id("com.tezov.plugin_project.catalog") version "1.0.9" apply true
 }
 
 //uncoment the catalog you want to use for the demo

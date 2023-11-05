@@ -206,6 +206,10 @@ internal class CatalogMap(
 
     val values get() = catalog.values
 
+    fun forEach(block: (key: String, value: String) -> Unit) = catalog.forEach {
+        block(it.key, it.value)
+    }
+
     fun filter(
         predicate: (key: String) -> Boolean
     ) = catalog.filter { predicate(it.key) }
