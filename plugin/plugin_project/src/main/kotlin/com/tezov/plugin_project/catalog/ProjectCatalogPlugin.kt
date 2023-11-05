@@ -4,10 +4,17 @@ import com.tezov.plugin_project.Logger.PLUGIN_CATALOG
 import com.tezov.plugin_project.Logger.throwException
 import com.tezov.plugin_project.VersionCheck
 import com.tezov.plugin_project.catalog.CatalogMap.Companion.KEY_SEPARATOR
+import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_PLUGIN_ID
+import org.gradle.api.ExtensiblePolymorphicDomainObjectContainer
+import org.gradle.api.Named
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.initialization.Settings
+import org.gradle.api.model.ObjectFactory
+import org.gradle.api.plugins.ExtensionAware
+import org.gradle.api.provider.Property
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
 
 fun Settings.tezovCatalogSource(value: String) {
     extensions.findByType(SettingsExtension::class.java)?.buildCatalog(value)
@@ -87,14 +94,6 @@ class ProjectCatalogPlugin : Plugin<Any> {
                     SettingsExtension::class.java,
                     any
                 )
-                val source = runCatching { System.getProperty(SYSTEM_PROP_CATALOG_SOURCE) }
-                    .getOrNull() ?: run {
-                    PLUGIN_CATALOG.throwException("catalog property not found. Add a valid property 'systemProp.catalog' in gradle.properties")
-                }
-                val catalog = buildCatalog(any, source)
-
-                dsl(any, catalog)
-
                 any.gradle.rootProject {
                     settingsExtension.catalog?.let { catalog ->
                         hasBeenApplyToRootProject.set(true)
@@ -109,12 +108,6 @@ class ProjectCatalogPlugin : Plugin<Any> {
                             "catalog not found. Maybe you forgot the call tezovCatalogSource(value:String) in settings.gradle after having applied the plugin ?"
                         )
                     }
-                    hasBeenApplyToRootProject.set(true)
-                    extensions.create(
-                        CATALOG_EXTENSION_NAME,
-                        CatalogProjectExtension::class.java,
-                        catalog
-                    )
                 }
             }
 
@@ -134,45 +127,6 @@ class ProjectCatalogPlugin : Plugin<Any> {
         }
 
     }
-
-    private fun buildCatalog(settings: Settings, sourceCatalog: String): CatalogMap {
-        val catalog = CatalogMap(
-            settings = settings,
-            catalogPointer = CatalogPointer.build(
-                settings = settings,
-                from = sourceCatalog
-            )
-        )
-
-        val domainLibrary = settings
-            .dependencyResolutionManagement
-            .versionCatalogs
-            .let { it.findByName(CATALOG_KEY_LIBRARIES) ?: it.create(CATALOG_KEY_LIBRARIES) }
-
-        val versionsKey = CATALOG_KEY_VERSIONS + KEY_SEPARATOR
-        catalog.filter {
-            it.startsWith(versionsKey)
-        }.takeIf { it.isNotEmpty() }?.let { catalogVersions ->
-            with(domainLibrary) {
-                catalogVersions.forEach { entry ->
-                    version(entry.key.substringAfter(KEY_SEPARATOR), entry.value)
-                }
-            }
-        }
-
-        val librariesKey = CATALOG_KEY_LIBRARIES + KEY_SEPARATOR
-        catalog.filter {
-            it.startsWith(librariesKey)
-        }.takeIf { it.isNotEmpty() }?.let { catalogLibraries ->
-            with(domainLibrary) {
-                catalogLibraries.forEach { entry ->
-                    library(entry.key.substringAfter(KEY_SEPARATOR), entry.value)
-                }
-            }
-        }
-        return catalog
-    }
-
     interface MyPolymorphicTypeContainer {
         fun getConn(): ExtensiblePolymorphicDomainObjectContainer<MyPolymorphicType>
     }
@@ -237,7 +191,6 @@ class ProjectCatalogPlugin : Plugin<Any> {
             }
         }
     }
-
 
     private fun dsl(settings: Settings, catalog: CatalogMap) {
         settings.gradle.rootProject {
