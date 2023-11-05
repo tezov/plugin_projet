@@ -1,7 +1,7 @@
 # Tezov plugin project
 
 ## Description
-Gradle plugins for Android project. The 2 plugins are not dependant to each other hence they can be used separately or together.
+Gradle plugins for Android project. The 2 plugins are not dependant to each other hence they can be used separately.
 
 **Plugin Catalog**
 shared version, dependencies coordinates and variables between modules
@@ -31,6 +31,8 @@ Min gradle version : 8.0 and Min Android plugin version 8.0.2 :
 - add plugin and repositories to settings.gradle.kts. And apply the plugin!
 
 ```
+import com.tezov.plugin_project.catalog.tezovCatalogSource // MANDATORY
+
 buildscript {
     dependencies { ... }
     repositories {
@@ -42,42 +44,20 @@ buildscript {
 
 plugins {
     ...
-    id("com.tezov.plugin_project.catalog") version "?version?" apply true
+    id("com.tezov.plugin_project.catalog") version "?version?" apply true // MANDATORY
     ...
 }
 
-```
-
-- inside **root project** gradle.properties, specify the path of your json catalog
-
-```
-systemProp.catalog=file://./tezov.catalog.yaml (./ is the root project directory or ../../ to get back more)
-or systemProp.catalog=file://./tezov.catalog.json
-or systemProp.catalog=file://./tezov.catalog.toml
-or systemProp.catalog=url://https://www.tezov.com/tezov.catalog.json
-```
-
-- inside **root project** build.gradle.kts, you can use the version check dependencies (optional)
+//uncoment the catalog you want to use for the demo
+tezovCatalogSource("file://./tezov.catalog.yaml")  // MANDATORY
+//tezovCatalogSource("file://./tezov.catalog.json")
+//tezovCatalogSource("file://./tezov.catalog.toml")
+//tezovCatalogSource("url://https://raw.githubusercontent.com/tezov/plugin_projet/master/demo/tezov.catalog.yaml")
 
 ```
-/* 
-// uncomment to check dependencies from catalog
-tezovCatalog {
-   with("libraries.runtime"){
-        with("core"){
-            checkDependenciesVersion()
-        }
-        with("compose"){
-            checkDependenciesVersion()
-        }
-    }
-}
-*/  
-```
-
 **Catalog example** in this repo:  tezov.catalog.json / tezov.catalog.yaml / tezov.catalog.toml
 
-- Then in build.gradle.kts of each module that have been defined in the json, you can use the catalog plugin
+- Then in build.gradle.kts of each modules that have been defined in the json, you can use the catalog plugin
 
 ```
 android {
@@ -142,14 +122,32 @@ dependencies {
 
 ```
 
+- inside **root project** build.gradle.kts, you can use the version check dependencies (optional)
+
+```
+/* 
+// uncomment to check dependencies from catalog
+tezovCatalog {
+   with("libraries.runtime"){
+        with("core"){
+            checkDependenciesVersion()
+        }
+        with("compose"){
+            checkDependenciesVersion()
+        }
+    }
+}
+*/  
+```
+
 ## Catalog functions
 - **string**, **stringList**, **int**, **javaVersion** (+ **OrNull** version, and optional default value)
 - **forEach** and **filter**
 - **with** to scope yourself inside some json level****
 - **checkDependenciesVersion**
 
-**NEW** : Instead of using string("") to retrieve your dependencies coordinates, you can now use direclty your names as variable (see the example above).
-To make use of this, the first level of dependencies coordinates must be "libraries" and the first level of versions must ne "versions". See the demo application.
+**NEW** : Instead of using string("") to retrieve your dependencies coordinates, you can now use the tpe safe accessor (see the example above).
+To make use of this, the first level of dependencies coordinates must be "libraries" and the first level of versions must be "versions". See the demo application.
 
 ## Catalog features:
 - You can have any level of json, yaml or toml
@@ -169,14 +167,14 @@ To make use of this, the first level of dependencies coordinates must be "librar
       - . to specify the root dir project
       - .. (as many as you need ../../../) to get out of the root dir. Usefull to keep only 1 dependencies files for all your app in the same folder.
   - url include should follow "anything_key : ${url://complete_url_where_the_file_is.extension_supported}" (yaml, json or toml)
-  - 
+  
 ## Pro and Cons
 
 pro
 - one single version / dependencies path / constants for a multi external modules project.
 - catalog can be remote or local
 - catalog can be split and include from anywhere.
-- can use the variable syntaxe of gradle catalog for dependencies only
+- can use the type safe accessor of gradle catalog for dependencies only
 
 con
 - lost of notification from the IDE which tells you that there is a new version, but can do some check with checkDependenciesVersion
@@ -297,5 +295,5 @@ tezovConfig {
 
 }
 ```
-**Note**: this plugin can be applied by the catalog plugin instead of standalone apply.
+**Note**: this plugin can be applied by the catalog plugin instead of standalone apply.( See the demo application )
 

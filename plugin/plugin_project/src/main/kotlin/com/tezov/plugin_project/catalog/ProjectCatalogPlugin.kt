@@ -4,18 +4,74 @@ import com.tezov.plugin_project.Logger.PLUGIN_CATALOG
 import com.tezov.plugin_project.Logger.throwException
 import com.tezov.plugin_project.VersionCheck
 import com.tezov.plugin_project.catalog.CatalogMap.Companion.KEY_SEPARATOR
+import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_PLUGIN_ID
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.initialization.Settings
+import org.gradle.kotlin.dsl.KotlinSettingsScript
 import java.util.concurrent.atomic.AtomicBoolean
+
+fun Settings.tezovCatalogSource(value: String) {
+    extensions.findByType(SettingsExtension::class.java)?.buildCatalog(value)
+        ?: PLUGIN_CATALOG.throwException(
+            this,
+            "you need to apply the plugin $CATALOG_PLUGIN_ID before to use this extension"
+        )
+}
+
+abstract class SettingsExtension constructor(
+    private val settings: Settings
+) {
+    internal var catalog: CatalogMap? = null
+
+    internal fun buildCatalog(sourceCatalog: String) {
+        val catalog = CatalogMap(
+            settings = settings,
+            catalogPointer = CatalogPointer.build(
+                settings = settings,
+                from = sourceCatalog
+            )
+        )
+
+        val domainLibrary = settings
+            .dependencyResolutionManagement
+            .versionCatalogs
+            .let {
+                it.findByName(ProjectCatalogPlugin.CATALOG_KEY_LIBRARIES) ?: it.create(
+                    ProjectCatalogPlugin.CATALOG_KEY_LIBRARIES
+                )
+            }
+
+        val versionsKey = ProjectCatalogPlugin.CATALOG_KEY_VERSIONS + KEY_SEPARATOR
+        catalog.filter {
+            it.startsWith(versionsKey)
+        }.takeIf { it.isNotEmpty() }?.let { catalogVersions ->
+            with(domainLibrary) {
+                catalogVersions.forEach { entry ->
+                    version(entry.key.substringAfter(KEY_SEPARATOR), entry.value)
+                }
+            }
+        }
+
+        val librariesKey = ProjectCatalogPlugin.CATALOG_KEY_LIBRARIES + KEY_SEPARATOR
+        catalog.filter {
+            it.startsWith(librariesKey)
+        }.takeIf { it.isNotEmpty() }?.let { catalogLibraries ->
+            with(domainLibrary) {
+                catalogLibraries.forEach { entry ->
+                    library(entry.key.substringAfter(KEY_SEPARATOR), entry.value)
+                }
+            }
+        }
+        this.catalog = catalog
+    }
+}
 
 class ProjectCatalogPlugin : Plugin<Any> {
 
     companion object {
         internal const val CATALOG_PLUGIN_ID = "com.tezov.plugin_project.catalog"
         internal const val CATALOG_EXTENSION_NAME = "tezovCatalog"
-
-        internal const val SYSTEM_PROP_CATALOG_SOURCE = "catalog"
 
         private val hasBeenApplyToRootProject = AtomicBoolean(false)
 
@@ -28,11 +84,13 @@ class ProjectCatalogPlugin : Plugin<Any> {
         when (any) {
             is Settings -> {
                 VersionCheck.gradle(any, PLUGIN_CATALOG, CATALOG_PLUGIN_ID)
-                val source =
-                    runCatching { System.getProperty(SYSTEM_PROP_CATALOG_SOURCE) }.getOrNull()
-                val catalog = source?.let { buildCatalog(any, source) }
+                val settingsExtension = any.extensions.create(
+                    CATALOG_EXTENSION_NAME,
+                    SettingsExtension::class.java,
+                    any
+                )
                 any.gradle.rootProject {
-                    catalog?.let {
+                    settingsExtension.catalog?.let { catalog ->
                         hasBeenApplyToRootProject.set(true)
                         extensions.create(
                             CATALOG_EXTENSION_NAME,
@@ -40,7 +98,10 @@ class ProjectCatalogPlugin : Plugin<Any> {
                             catalog
                         )
                     } ?: run {
-                        PLUGIN_CATALOG.throwException("catalog property not found. Add a valid property 'systemProp.catalog' in gradle.properties")
+                        PLUGIN_CATALOG.throwException(
+                            this,
+                            "catalog not found. Maybe you forgot the call tezovCatalogSource(value:String) in settings.gradle after having applied the plugin ?"
+                        )
                     }
                 }
             }
@@ -62,41 +123,4 @@ class ProjectCatalogPlugin : Plugin<Any> {
 
     }
 
-    private fun buildCatalog(settings: Settings, sourceCatalog: String): CatalogMap {
-        val catalog = CatalogMap(
-            settings = settings,
-            catalogPointer = CatalogPointer.build(
-                settings = settings,
-                from = sourceCatalog
-            )
-        )
-
-        val domainLibrary = settings
-            .dependencyResolutionManagement
-            .versionCatalogs
-            .let { it.findByName(CATALOG_KEY_LIBRARIES) ?: it.create(CATALOG_KEY_LIBRARIES) }
-
-        val versionsKey = CATALOG_KEY_VERSIONS + KEY_SEPARATOR
-        catalog.filter {
-            it.startsWith(versionsKey)
-        }.takeIf { it.isNotEmpty() }?.let { catalogVersions ->
-            with(domainLibrary) {
-                catalogVersions.forEach { entry ->
-                    version(entry.key.substringAfter(KEY_SEPARATOR), entry.value)
-                }
-            }
-        }
-
-        val librariesKey = CATALOG_KEY_LIBRARIES + KEY_SEPARATOR
-        catalog.filter {
-            it.startsWith(librariesKey)
-        }.takeIf { it.isNotEmpty() }?.let { catalogLibraries ->
-            with(domainLibrary) {
-                catalogLibraries.forEach { entry ->
-                    library(entry.key.substringAfter(KEY_SEPARATOR), entry.value)
-                }
-            }
-        }
-        return catalog
-    }
 }

@@ -1,6 +1,5 @@
 package com.tezov.plugin_project.catalog
 
-import com.tezov.plugin_project.Logger
 import com.tezov.plugin_project.Logger.PLUGIN_CATALOG
 import com.tezov.plugin_project.Logger.log
 import com.tezov.plugin_project.Logger.throwException
@@ -11,8 +10,6 @@ import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_K
 import com.tezov.plugin_project.catalog.ProjectCatalogPlugin.Companion.CATALOG_PLUGIN_ID
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
-import org.gradle.api.initialization.Settings
-import org.gradle.kotlin.dsl.plugins
 import javax.inject.Inject
 
 open class CatalogScope internal constructor(
